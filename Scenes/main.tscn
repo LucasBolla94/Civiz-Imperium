@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://b426odd7k6vis"]
+
+[ext_resource type="PackedScene" uid="uid://ditk2vldqft5b" path="res://Scenes/world.tscn" id="1_bo1nx"]
+[ext_resource type="PackedScene" uid="uid://cvyqbbtnnycw1" path="res://Scenes/char1.tscn" id="2_8gbba"]
+[ext_resource type="Script" path="res://Scripts/main.gd" id="3_game"]
+
+[node name="Main" type="Node2D" unique_id=1819404781]
+script = ExtResource("3_game")
+
+[node name="Water" parent="." unique_id=856468603 instance=ExtResource("1_bo1nx")]
+
+[node name="CharacterBody2D" parent="Water" unique_id=1049772180 instance=ExtResource("2_8gbba")]
+position = Vector2(904, 517)

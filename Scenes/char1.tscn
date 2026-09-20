@@ -1,0 +1,53 @@
+[gd_scene format=3 uid="uid://cvyqbbtnnycw1"]
+
+[ext_resource type="Texture2D" uid="uid://btq3krfg270n" path="res://Assets/Characters/char-test/16x32 Idle-Sheet.png" id="1_jh7j7"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ko1od"]
+atlas = ExtResource("1_jh7j7")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gf6lu"]
+atlas = ExtResource("1_jh7j7")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y4vmh"]
+atlas = ExtResource("1_jh7j7")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7va0u"]
+atlas = ExtResource("1_jh7j7")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_f1574"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ko1od")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gf6lu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_y4vmh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7va0u")
+}],
+"loop": 1,
+"name": &"Idle",
+"speed": 5.0
+}]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_f1574"]
+height = 26.0
+
+[node name="CharacterBody2D" type="CharacterBody2D" unique_id=1049772180]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1201527112]
+sprite_frames = SubResource("SpriteFrames_f1574")
+animation = &"Idle"
+frame_progress = 0.92087346
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2113435598]
+position = Vector2(0, 4)
+shape = SubResource("CapsuleShape2D_f1574")

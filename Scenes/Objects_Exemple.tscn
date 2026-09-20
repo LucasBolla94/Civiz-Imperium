@@ -1,0 +1,99 @@
+[gd_scene format=4 uid="uid://cj6o0fdvy3qa7"]
+
+[ext_resource type="Texture2D" uid="uid://db8yp4uj4wh8q" path="res://Assets/Tiles/Stones 4.png" id="1_t8ft5"]
+[ext_resource type="Texture2D" uid="uid://xdrxfs4lt72d" path="res://Assets/Tiles/Apple Tree copiar.png" id="2_33llc"]
+
+[sub_resource type="TileSet" id="TileSet_f1574"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_a86fb"]
+texture = ExtResource("1_t8ft5")
+0:0/0 = 0
+1:0/0 = 0
+2:0/0 = 0
+3:0/0 = 0
+4:0/0 = 0
+5:0/0 = 0
+0:1/0 = 0
+1:1/0 = 0
+2:1/0 = 0
+3:1/0 = 0
+4:1/0 = 0
+5:1/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_ie5d1"]
+sources/0 = SubResource("TileSetAtlasSource_a86fb")
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_8xrm0"]
+texture = ExtResource("2_33llc")
+12:1/0 = 0
+13:1/0 = 0
+14:1/0 = 0
+15:1/0 = 0
+16:1/0 = 0
+17:1/0 = 0
+18:1/0 = 0
+19:1/0 = 0
+20:1/0 = 0
+21:1/0 = 0
+22:1/0 = 0
+23:1/0 = 0
+9:2/0 = 0
+10:2/0 = 0
+11:2/0 = 0
+12:2/0 = 0
+13:2/0 = 0
+14:2/0 = 0
+15:2/0 = 0
+16:2/0 = 0
+17:2/0 = 0
+18:2/0 = 0
+19:2/0 = 0
+20:2/0 = 0
+21:2/0 = 0
+22:2/0 = 0
+23:2/0 = 0
+6:3/0 = 0
+7:3/0 = 0
+8:3/0 = 0
+9:3/0 = 0
+10:3/0 = 0
+11:3/0 = 0
+12:3/0 = 0
+13:3/0 = 0
+14:3/0 = 0
+15:3/0 = 0
+16:3/0 = 0
+17:3/0 = 0
+18:3/0 = 0
+19:3/0 = 0
+20:3/0 = 0
+21:3/0 = 0
+22:3/0 = 0
+23:3/0 = 0
+1:4/0 = 0
+4:4/0 = 0
+6:4/0 = 0
+7:4/0 = 0
+8:4/0 = 0
+9:4/0 = 0
+10:4/0 = 0
+11:4/0 = 0
+13:4/0 = 0
+16:4/0 = 0
+19:4/0 = 0
+22:4/0 = 0
+4:5/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_ub53g"]
+sources/0 = SubResource("TileSetAtlasSource_8xrm0")
+
+[node name="Objects_Exemple" type="TileMapLayer" unique_id=247005360]
+tile_set = SubResource("TileSet_f1574")
+
+[node name="Stone" type="TileMapLayer" parent="." unique_id=949326345]
+tile_map_data = PackedByteArray("AAABAAEAAAAAAAAAAAABAAIAAAAAAAEAAAACAAEAAAABAAAAAAACAAIAAAABAAEAAAADAAEAAAACAAAAAAADAAIAAAACAAEAAAA=")
+tile_set = SubResource("TileSet_ie5d1")
+
+[node name="Life_tree" type="TileMapLayer" parent="." unique_id=1591148696]
+tile_map_data = PackedByteArray("AAADAAYAAAAEAAQAAAADAAcAAAAEAAUAAAAFAAYAAAAGAAMAAAAFAAcAAAAGAAQAAAAGAAYAAAAHAAMAAAAGAAcAAAAHAAQAAAAHAAYAAAAIAAMAAAAHAAcAAAAIAAQAAAAIAAUAAAAJAAIAAAAIAAYAAAAJAAMAAAAIAAcAAAAJAAQAAAAJAAUAAAAKAAIAAAAJAAYAAAAKAAMAAAAJAAcAAAAKAAQAAAAKAAUAAAALAAIAAAAKAAYAAAALAAMAAAAKAAcAAAALAAQAAAAMAAUAAAAMAAEAAAAMAAYAAAAMAAIAAAAMAAcAAAAMAAMAAAANAAUAAAANAAEAAAANAAYAAAANAAIAAAANAAcAAAANAAMAAAANAAgAAAANAAQAAAAOAAUAAAAOAAEAAAAOAAYAAAAOAAIAAAAOAAcAAAAOAAMAAAAQAAUAAAASAAEAAAAQAAYAAAASAAIAAAAQAAcAAAASAAMAAAARAAUAAAATAAEAAAARAAYAAAATAAIAAAARAAcAAAATAAMAAAARAAgAAAATAAQAAAASAAUAAAAUAAEAAAASAAYAAAAUAAIAAAASAAcAAAAUAAMAAAAUAAUAAAAVAAEAAAAUAAYAAAAVAAIAAAAUAAcAAAAVAAMAAAAVAAUAAAAWAAEAAAAVAAYAAAAWAAIAAAAVAAcAAAAWAAMAAAAVAAgAAAAWAAQAAAAWAAUAAAAXAAEAAAAWAAYAAAAXAAIAAAAWAAcAAAAXAAMAAAAYAAgAAAABAAQAAAA=")
+tile_set = SubResource("TileSet_ub53g")
