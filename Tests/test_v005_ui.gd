@@ -70,6 +70,7 @@ func run() -> void:
 	var depot = game.buildings[1]
 	depot.materials.delivered = depot.materials.required.duplicate()
 	depot.build(20)
+	depot.level = 2
 	game.select_entity(depot)
 	await settle()
 	check(game.hud.garden_button.visible, "Food depot offers Create garden")

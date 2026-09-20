@@ -56,7 +56,7 @@ func _ready() -> void:
 	rows.add_child(exit_button)
 	rows.add_child(get_node("/root/Localization").selector())
 	var version := Label.new()
-	version.text = "V0.0.5  ·  HORTAS E UMA VILA EM CRESCIMENTO\nSalve pela Vila · Salvamento automático a cada 2 minutos."
+	version.text = "V0.0.5.1  ·  EXPANSÃO FLUIDA E ADMINISTRAÇÃO CLARA\nSalve pela Vila · Salvamento automático a cada 2 minutos."
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_font_size_override("font_size", 12)
 	rows.add_child(version)

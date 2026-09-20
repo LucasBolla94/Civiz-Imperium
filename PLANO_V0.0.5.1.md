@@ -1,10 +1,38 @@
 # Civiz Imperium — Plano V0.0.5.1
 
 - Versão alvo: **0.0.5.1**, escolhida pelo usuário para este pacote.
-- Revisão compartilhada: **12**.
+- Revisão compartilhada: **16**.
 - Par: [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md).
 - Base: V0.0.5 entregue.
-- Estado: **planejamento encerrado pelo usuário; escopo aprovado abaixo fechado para entrega à IA implementadora; jogo não alterado nesta etapa**.
+- Estado: **escopo fechado implementado e validado; propostas exploratórias permanecem fora da versão**.
+
+## Registro de implementação — revisão 16
+
+Esta seção registra a execução autorizada após o encerramento do planejamento. As menções abaixo a testes ainda não executados e à proibição de alterar o jogo durante a discussão são histórico da etapa de planejamento, não o estado atual da entrega.
+
+| ID | Requisito aprovado | Implementação e evidência |
+|---|---|---|
+| V0051-01 | Horta exige comida nível 2 | Bloqueio no botão, no início da ação e na criação; saves V005 e hortas existentes continuam operando. `test_v0051.gd`. |
+| V0051-02 | Avisos reais e atalhos | Balão abre prédio e causa; falta de gente leva a Habitantes, ferramentas à oficina, meta às políticas; cheio e sem acesso não sugerem contratar. `test_v0051_feedback.gd`, `test_v0051_feedback_ui.gd`. |
+| V0051-03 | Benefícios antes de gastar | Vagas/capacidades atuais e futuras derivadas das constantes; desbloqueios reais de hortas, pedreira e oficina; vila 3 não promete bônus ausente. PT/EN. `test_v0051.gd`, `test_v0051_feedback.gd`. |
+| V0051-04 | Alocação e automações preservadas | Sem troca automática de profissão; metas de estoque, encomendas, ferramentas, transporte e renovação existentes. `test_worker_ai.gd`, `test_v004.gd`, `test_v0051_cut_edges.gd`. |
+| V0051-05 | Cortar agora | Reserva de madeira sem consumir fruta na ordem; liberação de reservas de coleta, carga preservada; primeira machadada perde fruta e fixa corte irreversível; save/load e renovação sem duplicar árvore. `test_v0051.gd`, `test_v0051_cut_edges.gd`, cliques em `test_v0051_feedback_ui.gd`. |
+| V0051-06 | Shift com arraste | Amostragem contínua entre eventos do mouse; custo só da água livre; sem pedidos duplicados, sobre a interface, após soltar ou atrás de modais. `test_v0051_drag_ui.gd`, 3 zooms. |
+| V0051-07 | Expansão nas bordas | Sobreposição parcial com obras pendentes exclui células já reservadas, mantendo as demais elegíveis; cada trecho ainda exige costa pronta e acessível. `test_v0051_expansion.gd`, `test_expansion_brush.gd`, `test_expanded_construction.gd`. |
+
+### Diagnóstico e limites da correção de expansão
+
+Reprodução confirmada: marcar 3×3 em (39,21), no canto superior esquerdo, e tentar continuar em (39,23). Antes, a interseção parcial com a primeira obra rejeitava o pincel inteiro. Agora, as 6 células novas são aceitas, sem reservar/cobrar novamente as 3 anteriores. Construtores transportaram os materiais e concluíram as duas obras no teste. O relato original não incluiu célula nem mensagem, portanto não se afirma que esta era a única causa daquela tentativa.
+
+Verificados tamanhos de 1 a 9, quatro direções, canto superior esquerdo, buracos/reentrâncias, sobreposição a terra/obras, recursos insuficientes, coordenadas negativas, save/load e construção na expansão concluída. A coordenada do mouse usa piso matemático. Não houve erro de arredondamento negativo reproduzido. A região finita do mapa, falta de acesso, material insuficiente e expansão dependente de terra ainda pendente continuam impedimentos legítimos.
+
+O arraste foi exercitado com eventos reais, devagar e em um salto rápido, retorno ao mesmo trecho, passagem pelos menus, botão solto, modal e zoom 0,75 / 2 / 3,5. Ordens aparecem imediatamente sobre a água, com terreno concluído visualmente distinto. Não há preenchimento automático do interior de contornos.
+
+### Apresentação e compatibilidade
+
+Balões reutilizam o quadro de 16×16 em (0,112) da folha `Assets/UI/speech bubble, emojis, reaction.png`, inspecionada visualmente, sem redimensionar os sprites dos prédios. Sem encomenda de arte nova. Cópia de save real foi usada nos testes de construção sem escrever no save original. Partidas continuam em `civilization_v005.save`, com campos opcionais de corte e validação, mantendo o formato compatível para leitura da V005.
+
+Validação: regras/migração 34; corte/limites 9; expansão 48; feedback/tradução 18; arraste 73; cliques de feedback 7; regressões V005 68, UI 72, hortas/bordas 19, pincel 43, construção na expansão 10, V004 44, IA 31 e interface adaptável 461. Capturas PT/EN conferidas. O empacotador `Tests/package_v0051.py` exige teste do executável exportado e integridade dos ZIPs antes de entregar os arquivos Windows e projeto.
 
 ## Escopo fechado — referência principal para implementação
 
@@ -19,7 +47,9 @@ Esta seção prevalece sobre propostas e sequências exploratórias abaixo. Ence
 
 6. Na ferramenta de expansão, permitir segurar Shift e arrastar com o botão de colocação pressionado para marcar expansões sucessivas ao longo do percurso do mouse, contornando o terreno, sem clicar novamente em cada posição.
 
-Não alterar custos. Não incluir novos bônus, teto de prédio ligado à vila, novos requisitos de evolução, mudanças na coleta costeira, políticas logísticas, novos sistemas do nível 3, comércio ou famílias. Essas ideias ficam no registro de propostas para outra discussão, fora desta entrega. Não há lista adicional de correções de bugs reproduzidos aprovada neste fechamento.
+7. Investigar e corrigir bloqueios indevidos de expansão junto ao terreno, especialmente no lado superior esquerdo, com verificação das demais bordas e do gesto com Shift.
+
+Não alterar custos. Não incluir novos bônus, teto de prédio ligado à vila, novos requisitos de evolução, mudanças na coleta costeira, políticas logísticas, novos sistemas do nível 3, comércio ou famílias. Essas ideias ficam no registro de propostas para outra discussão, fora desta entrega. Há um defeito de expansão relatado pelo usuário, ainda não reproduzido nesta etapa, cuja investigação e correção integram o escopo conforme adendo abaixo.
 
 Reutilizar assets existentes; o arquivo de assets permanece sem encomendas novas. Inspecionar os balões existentes antes de usar. Detalhes de apresentação podem ser resolvidos sem inventar regras de gameplay. Se surgir decisão de gameplay indispensável não definida, consultar o usuário; **migração aprovada:** hortas já existentes em partidas antigas continuam funcionando normalmente, mesmo com depósito de comida nível 1. Exigir nível 2 somente para criar novas hortas; preservar as existentes e seu funcionamento, incluindo plantio, colheita e replantio. O usuário esclareceu que as partidas atuais são de teste, mas aprovou essa preservação. Não apagar ou invalidar patrimônio automaticamente.
 
@@ -51,11 +81,27 @@ Com a ferramenta de expansão selecionada, segurar Shift e arrastar o mouse com 
 - Não aprovar implicitamente expansão remota ou dependências entre áreas ainda não construídas. Se acompanhar o contorno exigir mudar essas regras, consultar o usuário antes de ampliar a mecânica.
 - Validar percurso contínuo, retorno sobre área já marcada, recursos insuficientes, posições inválidas, passagem sobre menus e término do gesto. Nenhum teste foi executado nesta etapa documental.
 
+## Correção solicitada — expansão bloqueada junto ao terreno
+
+**Relato:** há locais encostados no terreno existente onde o jogador não consegue expandir; o jogo indica erro. O exemplo citado fica no lado superior esquerdo do mapa. A mensagem exata e a célula não foram capturadas: a tentativa de visualizar o jogo durante a conversa não foi suportada pelo dispositivo. Não afirmar causa técnica ou reprodução confirmada.
+
+**Objetivo de experiência solicitado:** tornar a expansão agradável, fácil e fluida, além de corrigir os defeitos. A prévia deve acompanhar o cursor com estabilidade e indicar com clareza a área que será expandida, sua validade e o custo. No Shift com arraste, acompanhar o trajeto de forma contínua, sem perder posições válidas por movimentos rápidos, criar duplicatas ou produzir ordens após soltar o botão. Evitar alternância confusa entre prévia válida e inválida e mensagens repetidas a cada quadro; explicar impedimentos com feedback discreto e legível. A resposta visual à marcação deve ser imediata, sem confundir ordem aceita com terreno já construído. Preservar custos, execução física e restrições legítimas. Testar a interação no jogo com movimentos lentos e rápidos, cantos, diferentes zooms e passagem pelos menus; corrigir atritos observados, sem acrescentar novas mecânicas não aprovadas.
+
+**Resultado esperado:** permitir expansão em qualquer borda válida da ilha, em todas as direções, quando houver recursos disponíveis, acesso e demais condições legítimas. Não remover validações para permitir posições inválidas. Se uma posição estiver bloqueada legitimamente, explicar o motivo real de forma compreensível.
+
+**Instrução explícita do usuário:** investigar completamente o sistema de expansão de terreno e resolver os problemas encontrados, sem limitar a correção ao exemplo superior esquerdo. A IA implementadora deve examinar o fluxo inteiro, da seleção e prévia até a validação, reserva de recursos, criação da ordem, trabalho e conclusão, e verificar o resultado no jogo. O usuário não precisa fornecer diagnóstico técnico para iniciar essa investigação.
+
+**Trabalho incluído:** reproduzir primeiro o caso superior esquerdo e investigar cálculo de posição do mouse/célula, coordenadas negativas, tamanho e alinhamento da área de expansão, teste de adjacência, terrenos parciais, colisões/reservas, acesso e disponibilidade de recursos. Esses são pontos de investigação, não causas já estabelecidas. Conferir consistência entre prévia, validação e criação da ordem; corrigir causas encontradas e regressões relacionadas.
+
+**Verificação:** testar bordas superior, inferior, esquerda e direita; cantos e reentrâncias; áreas já expandidas e próximas de obras pendentes; tamanhos de expansão suportados; diferentes zooms; clique simples e Shift com arraste. Verificar recursos suficientes/insuficientes e impedir cobrança duplicada. Confirmar que uma ordem aceita pode ser executada e concluída pelo trabalhador. Registrar reprodução, causa identificada e testes realizados na entrega; não prometer ausência absoluta de bugs sem evidência.
+
+Esta correção integra a V0.0.5.1. Apenas a documentação foi atualizada durante esta conversa; a implementação e os testes ficam para a etapa de execução.
+
 ## Destino das próximas alterações
 
 O usuário confirmou que **V0.0.5.1 reunirá as novas atualizações e correções**. A V0.0.5 permanece como referência da entrega anterior. Registrar aqui as novas decisões e os defeitos confirmados; o documento par recebe somente encomendas de arte necessárias. A inclusão da versão não aprova automaticamente todas as sugestões de progressão.
 
-Para cada correção, registrar comportamento observado, resultado esperado, reprodução quando disponível e verificação da solução. Não rotular uma mudança de design como bug para executá-la sem decisão. Não há, nesta revisão, uma lista adicional de bugs reproduzidos: as constatações de progressão abaixo são análise de design, e os novos problemas serão acrescentados conforme forem identificados.
+Para cada correção, registrar comportamento observado, resultado esperado, reprodução quando disponível e verificação da solução. Não rotular uma mudança de design como bug para executá-la sem decisão. O defeito de expansão descrito no adendo foi relatado pelo usuário, mas ainda não reproduzido pelo agente. As demais constatações de progressão abaixo são análise de design, não bugs confirmados.
 
 ## Limites e decisões confirmadas
 
@@ -204,3 +250,13 @@ Esta sequência não é autorização de execução. Não alterar o jogo durante
 
 
 | 12 | Aprovado cancelar corte somente antes da primeira machadada; frutas restantes perdidas ao iniciar. Para retomar produção no local, plantar nova árvore após liberar o espaço. |
+
+| 13 | Incluída investigação e correção de expansão bloqueada junto ao terreno, relatada no lado superior esquerdo. Reprodução e causa ainda pendentes. |
+
+
+| 14 | Explicitado pedido de investigação completa do sistema de expansão e correção dos problemas encontrados, sem limitar ao ponto relatado. |
+
+
+| 15 | Acrescentado objetivo de expansão fluida e fácil: prévia estável, feedback claro, arraste contínuo e validação prática da experiência. |
+
+| 16 | Implementado o escopo fechado 01–07; registrados diagnóstico, compatibilidade, testes, tradução, reutilização de balão e empacotamento reproduzível. |

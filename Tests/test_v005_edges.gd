@@ -40,7 +40,7 @@ func run() -> void:
 	check(pile_total("wood") == 5 and pile_total("stone") == 12, "Worker-driven demolition preserves exact inventory")
 	# Adjacent gardens share a traversable edge, never the same plot.
 	fresh()
-	game.add_building("food",Vector2i(42,23),true)
+	game.add_building("food",Vector2i(42,23),true).level = 2
 	game.base.stored.wood = 70
 	game.rebuild_navigation()
 	var garden = game.place_job("garden",Vector2i(58,29))

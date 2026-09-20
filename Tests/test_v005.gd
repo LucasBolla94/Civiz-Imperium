@@ -134,6 +134,7 @@ func run() -> void:
 	# Garden construction, physical supplies, growth, yield and repeat cycles.
 	fresh()
 	var food = game.add_building("food",Vector2i(42,23),true)
+	food.level = 2
 	game.rebuild_navigation()
 	var garden = garden_site()
 	check(garden != null and garden.cells.size() == 4, "Food depot creates a fixed 2 by 2 garden")

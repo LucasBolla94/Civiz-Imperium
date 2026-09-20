@@ -8,6 +8,37 @@ var selected := false
 var is_tree := false
 var is_quarry := false
 var initial_reserve := 480
+var cut_requested := false
+var cut_started := false
+
+func request_cut() -> bool:
+	if not is_tree or removed or stage != 4 or cut_requested: return false
+	cut_requested = true
+	# Release only uncollected food. Already collected cargo stays with its owner.
+	for worker in game.work_planner.claims.keys():
+		if game.work_planner.claims[worker].source == self:
+			game.work_planner.release(worker)
+	queue_redraw()
+	game.hud.refresh()
+	return true
+
+func cancel_cut() -> bool:
+	if not cut_requested or cut_started: return false
+	cut_requested = false
+	for worker in game.work_planner.claims.keys():
+		if game.work_planner.claims[worker].source == self:
+			game.work_planner.release(worker)
+	game.hud.refresh()
+	return true
+
+func start_cut() -> void:
+	if not cut_requested or cut_started or stage != 4: return
+	cut_started = true
+	set_stage(6)
+	game.hud.refresh()
+
+func harvest_stock(activity: String) -> int:
+	return game.DATA.SOURCE_STOCK.wood if cut_requested and not cut_started and activity == "wood" else remaining
 
 func setup_quarry(controller, cell: Vector2i, amount: int) -> void:
 	game = controller
@@ -96,9 +127,11 @@ func work_cells() -> Array[Vector2i]:
 	return result
 
 func harvestable(kind: String) -> bool:
+	if is_tree and cut_requested and not cut_started: return not removed and kind == "wood"
 	return not removed and resource_kind == game.DATA.resource_for_activity(kind) and remaining > 0
 
 func take(amount: int, expected_kind := "") -> int:
+	if cut_requested and not cut_started: return 0
 	if removed or (expected_kind != "" and game.DATA.resource_for_activity(expected_kind) != resource_kind): return 0
 	var harvested := mini(amount, remaining)
 	remaining -= harvested
@@ -118,9 +151,13 @@ func description() -> String:
 	if not is_tree: return ("Pedreira aberta: " if is_quarry else "Jazida: ") + "%d pedras restantes." % remaining
 	var text: String = game.DATA.TREE_NAMES[stage]
 	if stage < 4: text += " · próximo estágio em %ds" % ceili(game.DATA.TREE_SECONDS[stage] - age)
-	if stage == 4: text += " · %d Hortifruti restantes · corte após esgotar a colheita" % remaining
+	if stage == 4:
+		text += " · %d Hortifruti restantes" % remaining
+		if cut_requested: text += " · Corte solicitado; cancelável antes da primeira machadada."
+		else: text += " · Cortar agora perde %d Hortifruti ao iniciar o corte." % remaining
 	elif stage < 4: text += " · Hortifruti: ainda não produz"
 	else: text += " · Hortifruti: 0"
+	if cut_started: text += " · Corte iniciado; frutas perdidas. Plante outra árvore após liberar o local."
 	if stage == 6: text += " · %d madeiras · somente lenhadores" % remaining
 	return text
 

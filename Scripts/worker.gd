@@ -175,6 +175,8 @@ func _process(delta: float) -> void:
 			if not game.work_planner.available_claim(self) or cargo >= game.carry_capacity():
 				finish_harvest()
 				return
+			if kind == "wood" and target.has_method("start_cut"):
+				target.start_cut()
 			var speed: float = 1.0 if equipped else game.DATA.TOOLLESS_SPEED
 			drain_work(delta, not equipped)
 			timer += delta * productivity * speed

@@ -33,7 +33,7 @@ const BUILDINGS = {
 	"warehouse": {"name": "Depósito geral", "short": "Depósito", "worker": "Transportador", "description": "Armazena até 200 unidades. Pode ser melhorado.", "cost": {"wood": 12, "stone": 10}, "build_seconds": 12.0, "color": Color("b78d68"), "example": "Building-1"},
 	"wood": {
 		"name": "Depósito de madeira", "short": "Madeira", "worker": "Lenhador",
-		"description": "Lenhadores cortam apenas árvores no último estágio.",
+		"description": "Lenhadores cortam árvores esgotadas ou marcadas com Cortar agora.",
 		"cost": {"stone": 15}, "build_seconds": 10.0,
 		"color": Color("bb8757"), "example": "Building-1",
 	},

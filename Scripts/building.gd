@@ -1,5 +1,15 @@
 extends Node2D
 const MATERIALS = preload("res://Scripts/material_request.gd")
+const FEEDBACK = preload("res://Scripts/building_feedback.gd")
+var warning: Dictionary = {}
+var warning_sprite: Sprite2D
+
+func update_warning() -> void:
+	warning = FEEDBACK.diagnose(self)
+	if is_instance_valid(warning_sprite): warning_sprite.visible = not warning.is_empty()
+
+func warning_hit(point: Vector2) -> bool:
+	return is_instance_valid(warning_sprite) and warning_sprite.visible and Rect2(warning_sprite.global_position-Vector2(8,8),Vector2(16,16)).has_point(point)
 var game
 var entity_id := 0
 var kind: String
@@ -71,6 +81,15 @@ func setup(controller, building_kind: String, cell: Vector2i, ready_now := false
 	if kind in ["house", "workshop"]: sprite.scale = Vector2.ONE * 0.5
 	sprite.position = Vector2(0, -sprite.texture.get_height() * sprite.scale.y * 0.5)
 	add_child(sprite)
+	warning_sprite = Sprite2D.new()
+	var bubble := AtlasTexture.new()
+	bubble.atlas = FEEDBACK.BUBBLES
+	bubble.region = Rect2(0,112,16,16)
+	warning_sprite.texture = bubble
+	warning_sprite.position = Vector2(grid_size.x*8,-grid_size.y*16-8)
+	warning_sprite.z_index = 20
+	warning_sprite.hide()
+	add_child(warning_sprite)
 	refresh_visual()
 
 func display_name() -> String:
@@ -177,8 +196,9 @@ func workshop_status() -> String:
 	var mode: String = ["Encomendas manuais", "Reposição por metas da vila", "Reserva conforme trabalhadores"][level - 1]
 	var work: String = "Produzindo " + game.DATA.RESOURCES[crafting].name if crafting != "" else "Aguardando encomenda / meta"
 	if crafting == "" and (tool_demand("axe") > 0 or tool_demand("pickaxe") > 0):
-		work = "Aguardando artesão" if next_recipe() != "" else "Aguardando madeira / pedra"
-	return "%s · %s · Fila: %d machados, %d picaretas · Prontos aqui: %d / %d · Aloque Oficina em Habitantes." % [mode, work, tool_orders.axe, tool_orders.pickaxe, stored.axe, stored.pickaxe]
+		var issue := FEEDBACK.diagnose(self)
+		work = issue.text if not issue.is_empty() else "Aguardando produção"
+	return "%s · %s · Fila: %d machados, %d picaretas · Prontos aqui: %d / %d" % [mode, work, tool_orders.axe, tool_orders.pickaxe, stored.axe, stored.pickaxe]
 
 func can_craft() -> bool:
 	if demolition_requested: return false

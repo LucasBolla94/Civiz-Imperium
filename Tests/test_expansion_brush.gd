@@ -25,7 +25,7 @@ func run() -> void:
 	for cell in holes: game.land.erase_cell(cell)
 	game.refresh_shoreline()
 	game.rebuild_navigation()
-	game.add_building("food",Vector2i(42,23),true)
+	game.add_building("food",Vector2i(42,23),true).level = 2
 	var garden = game.place_job("garden",Vector2i(59,32))
 	check(garden != null,"Existing garden near repair")
 	game.logistics.drop(Vector2i(61,31),"wood",3)

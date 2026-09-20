@@ -14,7 +14,7 @@ func total_committed(resource: String) -> int:
 		if worker.cargo_resource == resource: amount += worker.cargo
 	for pile in game.logistics.piles: amount += pile.stored.get(resource, 0)
 	for claim in game.work_planner.claims.values():
-		if claim.source.resource_kind == resource: amount += claim.remaining
+		if claim.get("resource", claim.source.resource_kind) == resource: amount += claim.remaining
 	return amount
 
 func production_limit(resource: String) -> int:
@@ -31,7 +31,8 @@ func production_limit(resource: String) -> int:
 func allowed_amount(source, capacity: int) -> int:
 	# Clear orchard stumps even when the wood goal is met, so produce renewal continues.
 	if source.is_tree and source.stage == 6 and orchards.has(source.origin): return capacity
-	return mini(capacity, maxi(0, production_limit(source.resource_kind) - total_committed(source.resource_kind)))
+	var resource: String = "wood" if source.is_tree and source.get("cut_requested") == true else source.resource_kind
+	return mini(capacity, maxi(0, production_limit(resource) - total_committed(resource)))
 
 func tick(delta: float) -> void:
 	timer -= delta

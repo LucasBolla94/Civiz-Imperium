@@ -329,3 +329,46 @@ desligado	off
 pequena	small
 média	medium
 grande	large
+Melhore um depósito de comida para o nível 2 para criar hortas.	Upgrade a food store to level 2 to create gardens.
+Cortar agora	Cut down now
+Cancelar corte	Cancel cutting
+Corte iniciado	Cutting started
+Frutas restantes são perdidas na primeira machadada. Lenhadores executam o corte.	Remaining fruit is lost at the first axe stroke. Woodcutters carry out the work.
+ · %d Hortifruti restantes	 · %d Produce remaining
+ · Corte solicitado; cancelável antes da primeira machadada.	 · Cutting ordered; cancellable before the first axe stroke.
+ · Cortar agora perde %d Hortifruti ao iniciar o corte.	 · Cutting now loses %d Produce when work starts.
+ · Corte iniciado; frutas perdidas. Plante outra árvore após liberar o local.	 · Cutting started; fruit lost. Plant another tree after clearing the site.
+Entrada sem acesso; libere o caminho.	Entrance inaccessible; clear the path.
+Obra aguardando materiais e transporte.	Construction awaiting materials and delivery.
+Falta construtor.	No builder assigned.
+Depósito cheio; libere espaço ou melhore o armazenamento.	Store full; free space or upgrade storage.
+Oficina aguardando madeira / pedra.	Workshop awaiting wood / stone.
+Meta de estoque atendida; produção pausada.	Stock target reached; production paused.
+Sem fonte disponível; aguarde o ciclo ou prepare uma nova fonte.	No source available; wait for growth or prepare a new source.
+Fonte sem acesso; libere o caminho.	Resource source inaccessible; clear the path.
+Depósitos sem espaço acessível para esta coleta.	No accessible storage space for this resource.
+Falta trabalhador.	No worker assigned.
+Trabalhadores descansando.	Workers are resting.
+Sem ferramenta; trabalho mais lento.	No tool; work is slower.
+Nível máximo.	Maximum level.
+Próximo nível: transportadores e carga de 5 → 7.	Next level: carriers and carrying capacity 5 → 7.
+Próximo nível: nível 3 da vila; sem bônus adicional de produção.	Next level: village level 3; no additional production bonus.
+Próximo nível: vagas %d → %d.	Next level: housing capacity %d → %d.
+Próximo nível: armazenamento %d → %d.	Next level: storage capacity %d → %d.
+ Libera criar hortas.	 Unlocks new gardens.
+ Libera investigar terreno e abrir pedreiras.	 Unlocks surveys and quarry excavation.
+ Libera reposição por metas.	 Unlocks restocking to targets.
+ Reserva automática: 1 ferramenta a cada 2 trabalhadores da profissão, arredondando para cima.	 Automatic reserve: 1 tool per 2 workers in the profession, rounded up.
+Ver impedimento	Inspect issue
+Abrir Habitantes	Open Inhabitants
+Ver ferramentas	View tools
+Ver metas	View targets
+Ver armazenamento / obra	View storage / construction
+Este trecho já está marcado para aterro.	This area is already queued for filling.
+Ctrl + roda: tamanho · Shift: repetir · Esc: cancelar	Ctrl + wheel: size · Shift + drag: paint · Esc: cancel
+Ctrl + roda: tamanho · Shift + arraste: pintar · Esc: cancelar	Ctrl + wheel: size · Shift + drag: paint · Esc: cancel
+Ctrl + roda ajusta o pincel; Shift + arraste marca o percurso; Esc cancela. Só a água será aterrada.	Ctrl + wheel adjusts the brush; Shift + drag paints along the path; Esc cancels. Only water is filled.
+V0.0.5.1  ·  EXPANSÃO FLUIDA E ADMINISTRAÇÃO CLARA	V0.0.5.1  ·  FLUID EXPANSION AND CLEAR MANAGEMENT
+Lenhadores cortam árvores esgotadas ou marcadas com Cortar agora.	Woodcutters cut exhausted trees or trees marked with Cut down now.
+Células: %d · Pedras: %d · Madeiras: %d · Trabalho: %.1fs\nCtrl + roda: tamanho · Shift + arraste: pintar · Esc: cancelar	Cells: %d · Stone: %d · Wood: %d · Work: %.1fs\nCtrl + wheel: size · Shift + drag: paint · Esc: cancel
+Aguardando produção	Awaiting production

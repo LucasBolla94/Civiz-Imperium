@@ -16,13 +16,20 @@ func cost(count: int) -> Dictionary:
 
 func inspect(origin: Vector2i, size: int) -> Dictionary:
 	var cells := water_cells(origin,size)
+	var reserved: Array[Vector2i] = []
+	for job in game.jobs:
+		if not job.reserves_ground(): continue
+		for cell in job.cells:
+			if cells.has(cell):
+				reserved.append(cell)
+				cells.erase(cell)
 	var result := {"cells": cells, "cost": cost(cells.size()), "seconds": cells.size()*10.0/9.0,
-		"entry": Vector2i(-999,-999), "reason": "", "discovery": size == 3 and cells.size() == 9}
+		"reserved": reserved, "entry": Vector2i(-999,-999), "reason": "", "discovery": size == 3 and cells.size() == 9}
 	if not game.get_node("Water/Water").get_used_rect().encloses(Rect2i(origin,Vector2i(size,size))):
 		result.reason = "Limite da região desta versão."
 		return result
 	if cells.is_empty():
-		result.reason = "Não há água para preencher neste pincel."
+		result.reason = "Este trecho já está marcado para aterro." if not reserved.is_empty() else "Não há água para preencher neste pincel."
 		return result
 	var pending := {}
 	for cell in cells:

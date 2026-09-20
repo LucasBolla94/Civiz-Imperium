@@ -33,7 +33,7 @@ func run() -> void:
 		check(red > 5 and green > 5 and white == 0,"Colored produce without opaque white backdrop: " + str(size))
 	fresh()
 	stop_workers()
-	game.add_building("food",Vector2i(42,23),true)
+	game.add_building("food",Vector2i(42,23),true).level = 2
 	game.rebuild_navigation()
 	var garden = game.place_job("garden",Vector2i(58,29))
 	check(garden != null,"Garden placed")

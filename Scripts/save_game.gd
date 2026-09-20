@@ -20,7 +20,7 @@ func snapshot() -> Dictionary:
 		var item := fields(building, ["kind", "origin", "completed", "progress", "stored", "delivered", "level", "upgrading", "tool_targets", "tool_orders", "craft_progress", "crafting", "priority", "entity_id", "work_started", "demolition_requested", "demolition_started", "demolition_progress"])
 		item.materials = {"required": building.materials.required, "delivered": building.materials.delivered}
 		data.buildings.append(item)
-	for source in game.sources: data.sources.append(fields(source, ["is_tree", "is_quarry", "origin", "stage", "age", "remaining", "removed", "initial_reserve"]))
+	for source in game.sources: data.sources.append(fields(source, ["is_tree", "is_quarry", "origin", "stage", "age", "remaining", "removed", "initial_reserve", "cut_requested", "cut_started"]))
 	for job in game.jobs:
 		var item := fields(job, ["kind", "origin", "entry_cell", "activity", "completed", "progress", "duration", "priority", "deposit", "released"])
 		if job.kind == "expand": item.merge(fields(job,["cells","brush_size","discovery_eligible"]))
@@ -83,6 +83,12 @@ func valid(data) -> bool:
 	for key in ["land", "buildings", "sources", "jobs", "workers", "piles", "gardens"]:
 		if not data.get(key) is Array: return false
 	if data.buildings.is_empty() or data.buildings[0].get("kind") != "base": return false
+	for item in data.sources:
+		if not item is Dictionary: return false
+		for field in ["cut_requested","cut_started"]:
+			if item.has(field) and not item[field] is bool: return false
+		if item.get("cut_started",false) and (not item.get("cut_requested",false) or item.get("stage") != 6): return false
+		if item.get("cut_requested",false) and (not item.get("is_tree",false) or item.get("stage") not in [4,6]): return false
 	for item in data.buildings:
 		if not game.DATA.BUILDINGS.has(item.get("kind", "")) or not item.get("origin") is Vector2i or not item.get("stored") is Dictionary: return false
 		if item.get("kind") == "base" and item.get("demolition_requested", false): return false

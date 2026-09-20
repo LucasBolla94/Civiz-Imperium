@@ -24,7 +24,8 @@ func claim_harvest(worker) -> Dictionary:
 	var best_score := INF
 	for source in game.sources + game.gardens:
 		if not source.harvestable(worker.kind): continue
-		var amount: int = mini(game.carry_capacity(), source.remaining - reserved(source))
+		var stock: int = source.harvest_stock(worker.kind) if source.has_method("harvest_stock") else source.remaining
+		var amount: int = mini(game.carry_capacity(), stock - reserved(source))
 		amount = game.automation.allowed_amount(source, amount)
 		if amount <= 0: continue
 		var occupied: Array[Vector2i] = []
@@ -42,7 +43,7 @@ func claim_harvest(worker) -> Dictionary:
 			if source == worker.preferred_source: score *= game.DATA.FAMILIAR_SOURCE_FACTOR
 			if score >= best_score: continue
 			best_score = score
-			best = {"source": source, "cell": spot, "remaining": amount, "route": route}
+			best = {"source": source, "cell": spot, "remaining": amount, "route": route, "resource": game.DATA.resource_for_activity(worker.kind)}
 	if not best.is_empty(): claims[worker] = best
 	return best
 

@@ -9,6 +9,8 @@ var stock_label: Label
 var inspection_icon: TextureRect
 var resource_labels := {}
 var garden_button: Button
+var cut_button: Button
+var warning_button: Button
 var replant_button: Button
 var manual_plant_button: Button
 var demolish_button: Button
@@ -334,6 +336,12 @@ func _ready() -> void:
 	building_actions.add_child(plant_button)
 	garden_button = button("Criar horta · 10 madeiras", func(): game.begin_action("garden"))
 	building_actions.add_child(garden_button)
+	cut_button = button("Cortar agora",func():
+		if game.selection.cut_requested: game.selection.cancel_cut()
+		else: game.selection.request_cut())
+	building_actions.add_child(cut_button)
+	warning_button = button("Ver impedimento",open_warning_action)
+	building_actions.add_child(warning_button)
 	manual_plant_button = button("Plantar · 2 Hortifruti", func(): game.selection.request_plant())
 	building_actions.add_child(manual_plant_button)
 	replant_button = button("Replantio automático", func(): game.selection.auto_replant = not game.selection.auto_replant)
@@ -580,6 +588,7 @@ func blocks_world_input(point: Vector2) -> bool:
 	return residents_window.visible or extinction_panel.visible or top_panel.get_global_rect().has_point(point) or bottom_panel.get_global_rect().has_point(point) or (workforce_panel.visible and workforce_panel.get_global_rect().has_point(point))
 
 func refresh() -> void:
+	for building in game.buildings: building.update_warning()
 	var free_workers: int = game.activity_count("idle")
 	var resting := 0
 	for worker in game.workers:
@@ -618,8 +627,17 @@ func refresh() -> void:
 	var is_base: bool = is_building and selected.completed and selected.kind == "base"
 	var is_garden: bool = is_instance_valid(selected) and selected is GARDEN
 	garden_button.visible = is_building and selected.kind == "food" and selected.completed and not selected.demolition_requested
-	garden_button.disabled = not game.can_afford(game.DATA.GARDEN_COST)
-	garden_button.tooltip_text = "Cercado: 10 madeiras uma vez. Plantio: 2 Hortifruti por ciclo. 60s; 15 Hortifruti."
+	garden_button.disabled = not game.gardens_unlocked() or not game.can_afford(game.DATA.GARDEN_COST)
+	garden_button.tooltip_text = "Melhore um depósito de comida para o nível 2 para criar hortas." if not game.gardens_unlocked() else "Cercado: 10 madeiras uma vez. Plantio: 2 Hortifruti por ciclo. 60s; 15 Hortifruti."
+	var tree: bool = is_instance_valid(selected) and selected.has_method("request_cut") and selected.is_tree and not selected.removed
+	cut_button.visible = tree and (selected.stage == 4 or selected.cut_requested)
+	cut_button.disabled = tree and selected.cut_started
+	cut_button.text = "Cancelar corte" if tree and selected.cut_requested and not selected.cut_started else ("Corte iniciado" if tree and selected.cut_started else "Cortar agora")
+	cut_button.tooltip_text = "Frutas restantes são perdidas na primeira machadada. Lenhadores executam o corte."
+	warning_button.visible = is_building and not selected.warning.is_empty()
+	if warning_button.visible:
+		warning_button.text = {"inhabitants":"Abrir Habitantes","tools":"Ver ferramentas","policies":"Ver metas","building":"Ver armazenamento / obra"}[selected.warning.action]
+		warning_button.tooltip_text = selected.warning.text
 	manual_plant_button.visible = is_garden and selected.phase == "empty"
 	manual_plant_button.disabled = not game.can_afford(game.DATA.PLANT_COST)
 	replant_button.visible = is_garden
@@ -647,7 +665,7 @@ func refresh() -> void:
 	upgrade_button.text = "Melhorar"
 	if is_building and selected.kind == "workshop": upgrade_button.text = "Liberar metas · nível 2" if selected.level == 1 else ("Reserva automática · nível 3" if selected.level == 2 else "Nível máximo")
 	if is_building and selected.kind == "stone" and selected.level == 1: upgrade_button.text = "Liberar pedreiras · nível 2"
-	upgrade_button.tooltip_text = game.DATA.cost_text(selected.upgrade_cost()) if is_building else ""
+	upgrade_button.tooltip_text = selected.FEEDBACK.next_level(selected) + "\n" + game.DATA.cost_text(selected.upgrade_cost()) if is_building else ""
 	var workshop: bool = is_building and selected.completed and not selected.demolition_requested and selected.kind == "workshop"
 	for order in order_buttons: order.visible = workshop
 	tools_box.visible = workshop and selected.level == 2
@@ -674,7 +692,7 @@ func refresh() -> void:
 	expand_button.tooltip_text = "Ctrl + roda ajusta o pincel; o custo depende apenas da água preenchida."
 	evolve_button.disabled = not game.upgrade_ready()
 	evolve_button.text = "Evoluir vila\nNível %d" % mini(3,game.village_level+1) if game.village_level < 3 else "Vila próspera"
-	evolve_button.tooltip_text = game.DATA.cost_text(game.upgrade_cost()) + " · " + game.cost_status(game.upgrade_cost()) + " · Nível 2 libera transportadores, carga maior."
+	evolve_button.tooltip_text = game.DATA.cost_text(game.upgrade_cost()) + " · " + game.cost_status(game.upgrade_cost()) + " · " + game.base.FEEDBACK.next_level(game.base)
 	aid_button.disabled = game.aid_cooldown > 0
 	aid_button.tooltip_text = "Disponível em %ds" % ceili(game.aid_cooldown)
 	progress.visible = false
@@ -688,7 +706,7 @@ func refresh() -> void:
 			var plan: Dictionary = game.expansion_preview
 			title_label.text = "Aterrar terreno · Pincel %d × %d" % [game.expansion_brush_size,game.expansion_brush_size]
 			var cost: Dictionary = plan.get("cost",{})
-			detail_label.text = "Células: %d · Pedras: %d · Madeiras: %d · Trabalho: %.1fs\nCtrl + roda: tamanho · Shift: repetir · Esc: cancelar" % [plan.get("cells",[]).size(),cost.get("stone",0),cost.get("wood",0),plan.get("seconds",0.0)]
+			detail_label.text = "Células: %d · Pedras: %d · Madeiras: %d · Trabalho: %.1fs\nCtrl + roda: tamanho · Shift + arraste: pintar · Esc: cancelar" % [plan.get("cells",[]).size(),cost.get("stone",0),cost.get("wood",0),plan.get("seconds",0.0)]
 			if not game.preview_valid: detail_label.text += "\n" + game.placement_reason
 	elif is_building:
 		title_label.text = "%s · nível %d" % [selected.display_name(), selected.level]
@@ -708,6 +726,9 @@ func refresh() -> void:
 		else:
 			detail_label.text = "%d/%d — %s. %s" % [selected.used(),selected.capacity(),"Cheio" if selected.used() >= selected.capacity() else "Espaço disponível",game.DATA.cost_text(selected.stored)]
 			if selected.kind == "workshop": detail_label.text = selected.workshop_status()
+		if selected.completed and not selected.demolition_requested:
+			detail_label.text += "\n" + selected.FEEDBACK.next_level(selected)
+		if not selected.warning.is_empty() and not detail_label.text.contains(selected.warning.text): detail_label.text += "\n" + selected.warning.text
 	elif is_instance_valid(selected) and selected.has_method("wake"):
 		title_label.text = ("Rei " if selected.person.is_king else "") + selected.person.display_name
 		detail_label.text = resident_text(selected).replace("\n"," · ")
@@ -743,3 +764,18 @@ func refresh() -> void:
 		extinction_panel.position = (get_viewport_rect().size - extinction_panel.size) / 2
 		extinction_panel.show()
 	get_node("/root/Localization").render(self)
+
+func open_warning_action() -> void:
+	var building = game.selection
+	if not is_instance_valid(building) or not building.has_method("update_warning"): return
+	building.update_warning()
+	if building.warning.is_empty(): return
+	match building.warning.action:
+		"inhabitants":
+			if not workforce_panel.visible: toggle_workforce()
+		"policies": policy_window.popup_centered()
+		"tools":
+			var workshop = game.workplace_for("workshop")
+			if workshop != null: game.select_entity(workshop)
+			else: game.begin_placement("workshop")
+		_: game.select_entity(building)

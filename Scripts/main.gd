@@ -24,6 +24,9 @@ var action_mode := ""
 var expansion_brush = preload("res://Scripts/expansion_brush.gd").new()
 var expansion_brush_size := 3
 var expansion_preview: Dictionary = {}
+var expansion_dragging := false
+var expansion_drag_point := Vector2.INF
+var expansion_drag_cells := {}
 var planted_count := 0
 var expansion_count := 0
 var village_level := 1
@@ -181,10 +184,13 @@ func spawn_tree(cell: Vector2i, stage := 0):
 
 func population_limit() -> int: return settlement.population_limit()
 
+func gardens_unlocked() -> bool:
+	return buildings.any(func(b): return b.kind == "food" and b.completed and b.level >= 2 and not b.demolition_requested)
+
 func can_place_garden(cell: Vector2i) -> bool:
 	placement_reason = ""
-	if not buildings.any(func(b): return b.kind == "food" and b.completed and not b.demolition_requested):
-		placement_reason = "Construa um depósito de comida."
+	if not gardens_unlocked():
+		placement_reason = "Melhore um depósito de comida para o nível 2 para criar hortas."
 		return false
 	if not can_afford(DATA.GARDEN_COST):
 		placement_reason = cost_status(DATA.GARDEN_COST)
@@ -276,10 +282,12 @@ func begin_action(mode: String) -> void:
 		action_mode = mode
 		select_entity(null)
 		update_expansion_preview()
-		notify("Ctrl + roda ajusta o pincel; Shift repete; Esc cancela. Só a água será aterrada.")
+		notify("Ctrl + roda ajusta o pincel; Shift + arraste marca o percurso; Esc cancela. Só a água será aterrada.")
 		return
 	if mode == "garden":
-		if not buildings.any(func(b): return b.kind == "food" and b.completed and not b.demolition_requested): return
+		if not gardens_unlocked():
+			notify("Melhore um depósito de comida para o nível 2 para criar hortas.")
+			return
 		placement_kind = ""
 		action_mode = mode
 		preview_check_time = 0
@@ -741,6 +749,7 @@ func begin_placement(kind: String) -> void:
 	notify("Escolha onde construir. Verde = permitido. Esc ou botão direito cancela.")
 
 func cancel_placement() -> void:
+	end_expansion_drag()
 	action_mode = ""
 	placement_kind = ""
 	placement_overlay.queue_redraw()
@@ -770,9 +779,22 @@ func center_camera() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouse:
 		pointer_position = event.position
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+		end_expansion_drag()
+	if event is InputEventKey and event.keycode == KEY_SHIFT and not event.pressed:
+		end_expansion_drag()
+	if event is InputEventMouseMotion and expansion_dragging:
+		if not event.shift_pressed or not event.button_mask & MOUSE_BUTTON_MASK_LEFT or camera.input_blocked() or action_mode != "expand":
+			end_expansion_drag()
+		else:
+			drag_expansion(event.position)
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventMouseButton and event.pressed and event.ctrl_pressed and action_mode == "expand" and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
 		if camera.input_blocked() or hud.blocks_world_input(event.position): return
 		expansion_brush_size = clampi(expansion_brush_size + (1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -1),expansion_brush.MIN_SIZE,expansion_brush.MAX_SIZE)
+		expansion_drag_point = Vector2.INF
+		expansion_drag_cells.clear()
 		update_expansion_preview()
 		get_viewport().set_input_as_handled()
 		return
@@ -832,7 +854,19 @@ func _unhandled_input(event: InputEvent) -> void:
 				if hud.blocks_world_input(event.position):
 					return
 				var cell := world_cell(get_global_transform_with_canvas().affine_inverse() * event.position)
+				if action_mode.is_empty() and placement_kind.is_empty():
+					var point: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
+					for building in buildings:
+						if building.warning_hit(point):
+							select_entity(building)
+							return
 				if not action_mode.is_empty():
+					if action_mode == "expand" and event.shift_pressed:
+						expansion_dragging = true
+						expansion_drag_point = Vector2.INF
+						expansion_drag_cells.clear()
+						drag_expansion(event.position)
+						return
 					place_job(action_mode, cell - action_offset(), false, event.shift_pressed)
 					return
 				var entity = entity_at(cell)
@@ -844,6 +878,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					select_entity(null)
 
 func _process(delta: float) -> void:
+	if expansion_dragging and (camera.input_blocked() or not get_window().has_focus()): end_expansion_drag()
 	if not simulation_paused and not settlement.extinct:
 		aid_cooldown = maxf(0, aid_cooldown - delta * simulation_speed)
 		settlement.tick_moves()
@@ -874,6 +909,29 @@ func _process(delta: float) -> void:
 
 func action_offset() -> Vector2i:
 	return Vector2i(expansion_brush_size / 2,expansion_brush_size / 2) if action_mode == "expand" else Vector2i.ONE
+
+func end_expansion_drag() -> void:
+	expansion_dragging = false
+	expansion_drag_point = Vector2.INF
+	expansion_drag_cells.clear()
+
+func drag_expansion(point: Vector2) -> void:
+	if hud.blocks_world_input(point):
+		expansion_drag_point = Vector2.INF
+		return
+	var start := point if expansion_drag_point == Vector2.INF else expansion_drag_point
+	var steps := maxi(1,ceili(start.distance_to(point) / maxf(1.0,4.0 * camera.zoom.x)))
+	var transform := get_global_transform_with_canvas().affine_inverse()
+	for step in range(steps + 1):
+		var sample := start.lerp(point,float(step)/steps)
+		if hud.blocks_world_input(sample): continue
+		var cell := world_cell(transform * sample) - action_offset()
+		if expansion_drag_cells.has(cell): continue
+		expansion_drag_cells[cell] = true
+		# Invalid positions update the preview, without a notification per frame.
+		if can_place_job("expand",cell): place_job("expand",cell,false,true)
+	expansion_drag_point = point
+	update_expansion_preview()
 
 func update_expansion_preview() -> void:
 	preview_cell = world_cell(get_global_transform_with_canvas().affine_inverse() * pointer_position) - action_offset()
