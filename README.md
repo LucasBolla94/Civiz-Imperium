@@ -10,6 +10,18 @@ Decisões não tomadas ficam explicitamente pendentes; não são autorização p
 
 O documento de assets permanece separado e recebe somente pedidos de arte a criar ou adaptar, com contexto completo para a outra IA. Não adicionar fichas de reutilização ou itens “sem arte nova”: essas decisões ficam no plano do jogo. Se não houver encomendas, manter apenas o cabeçalho do documento de assets. Manter versões anteriores como histórico e atualizar o estado de entrega nos dois documentos. Não criar um terceiro plano de versão para substituir ou fragmentar esse par.
 
+## V0.0.6.1 — Ouro, fundição e comércio
+
+Ouro e fundição são liberados na base 3. Melhore o depósito de pedra para o nível 2, investigue terreno livre e abra a jazida revelada. Aloque mineiros no posto de ouro, fundidores e transportadores em **Habitantes**. Cada barra consome cinco minérios e duas madeiras; transportadores levam os insumos e guardam as barras no depósito geral.
+
+O porto custa 40 madeiras, 30 pedras e cinco barras. Use **R** para girar a prévia: duas fileiras ficam em terra e três na água. O barco precisa de acesso ao mar aberto. Quando atracar, selecione o porto e **Negociar no porto**. Comprar/vender reserva o pedido; os materiais viajam fisicamente em cargas normais. O pagamento acontece uma única vez, após a entrega completa. Pedidos já confirmados mantêm o comerciante esperando depois do prazo para novos negócios.
+
+Negócios usam o **depósito geral**, exigem transportador designado e espaço para receber. Se os materiais estiverem em outro depósito, **Levar material ao galpão** solicita transporte; confirme o negócio depois. Vendas de comida preservam três unidades por habitante. Cancelar devolve a carga ainda não negociada. Ouro, visitas, pedidos e devoluções são independentes nas cinco ilhas.
+
+A interface inclui emblema original, fontes Atkinson Hyperlegible/Cinzel, equipes com lista rolável e cabeçalho fixo. Prévias de construção usam o mesmo alinhamento dos prédios concluídos. **Investigar** procura jazidas; para reconstruir em terreno liberado ou após uma demolição, selecione diretamente um prédio em **Construir**. Investigar novamente não renova uma jazida esgotada.
+
+Estado e evidências: `VALIDACAO_V0.0.6.1.md`. Pacotes produzidos por `Tests/package_v0061.py`; o fechamento da validação humana é registrado separadamente dos testes automáticos. A demonstração `Tests/demo_v0061_progression.gd` usa uma cópia local de progresso de base 3, sem criar recursos; os salvamentos pessoais de partida não são publicados no repositório.
+
 ## V0.0.6 — Cinco ilhas e uma trilha contínua
 
 Abra `Builds/Civiz-Imperium-V0.0.6/Civiz Imperium V0.0.6.exe` ou extraia o pacote Windows mantendo o `.pck` ao lado do executável. O pacote Projeto contém o código da mesma revisão. Para editar, abra `project.godot` no Godot 4.7.2.

@@ -26,6 +26,7 @@ func claim_harvest(worker) -> Dictionary:
 		if not source.harvestable(worker.kind): continue
 		var stock: int = source.harvest_stock(worker.kind) if source.has_method("harvest_stock") else source.remaining
 		var amount: int = mini(game.carry_capacity(), stock - reserved(source))
+		if worker.kind=="gold_mining": amount=mini(amount,game.gold.post_space(worker.assigned_home,worker))
 		amount = game.automation.allowed_amount(source, amount)
 		if amount <= 0: continue
 		var occupied: Array[Vector2i] = []
@@ -34,6 +35,7 @@ func claim_harvest(worker) -> Dictionary:
 			occupied.append(claims[other].cell)
 			if claims[other].source == source: assigned += 1
 		var limit: int = game.DATA.TREE_WORK_SLOTS if source.is_tree else game.DATA.MINE_WORK_SLOTS
+		if worker.kind=="gold_mining": limit=game.DATA.ECONOMY.GOLD_WORK_SLOTS
 		if assigned >= limit: continue
 		for spot in source.work_cells():
 			if occupied.has(spot): continue

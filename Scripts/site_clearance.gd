@@ -78,11 +78,13 @@ func claim(worker) -> bool:
 		if not site.preparing_site: continue
 		var cells := area(site)
 		for pile in game.logistics.piles:
-			if not cells.has(pile.cell) or game.logistics.available(pile,pile.resource_kind) <= 0: continue
+			var available: int=game.logistics.available(pile,pile.resource_kind)
+			if pile.trade_id>0: available=pile.stored.get(pile.resource_kind,0)-game.logistics.reserved(pile,pile.resource_kind)-game.commerce.ticketed(pile,pile.trade_id)
+			if not cells.has(pile.cell) or available<=0: continue
 			if game.route_to_cell(worker.position,pile.cell).is_empty(): continue
 			var cell := destination(game.cell_center(pile.cell),worker)
 			if cell == NONE: continue
-			var ticket: Dictionary = game.logistics.reserve(worker,pile,site,pile.resource_kind,game.logistics.available(pile,pile.resource_kind),false)
+			var ticket: Dictionary = game.logistics.reserve(worker,pile,site,pile.resource_kind,available,false)
 			if ticket.is_empty(): continue
 			ticket.clearance = true
 			worker.ticket = ticket
@@ -143,7 +145,7 @@ func relocate(worker, delta: float) -> bool:
 			worker.interrupt_task()
 			return true
 	if game.world_cell(worker.position) == worker.clear_destination and worker.path.is_empty():
-		game.logistics.drop(worker.clear_destination,worker.cargo_resource,worker.cargo)
+		game.logistics.drop(worker.clear_destination,worker.cargo_resource,worker.cargo,worker.trade_id,worker.trade_leg)
 		worker.cargo = 0
 		worker.interrupt_task()
 		return true

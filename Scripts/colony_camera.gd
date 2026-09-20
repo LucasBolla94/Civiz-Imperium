@@ -1,7 +1,7 @@
 extends Camera2D
 ## Camera motion uses real time, independently of pause and simulation speed.
 const PAN_SPEED = 560.0 # Screen pixels per second at any zoom.
-const INITIAL_ZOOM_FACTOR = 1.10
+const INITIAL_ZOOM_FACTOR = 0.94
 const MIN_ZOOM = 0.8
 const MAX_ZOOM = 5.0
 const ZOOM_RESPONSE = 12.0
@@ -11,7 +11,7 @@ var game
 
 func reset_view() -> void:
 	zoom_target = -1.0
-	var bounds: Rect2i = game.land.get_used_rect()
+	var bounds: Rect2i = game.land.get_used_rect().grow(1)
 	var viewport := get_viewport_rect().size
 	var area := Rect2(Vector2(300,150), viewport - Vector2(340,420))
 	if is_instance_valid(game.hud): area = game.hud.map_visible_rect()

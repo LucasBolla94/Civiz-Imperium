@@ -2,6 +2,9 @@ extends Node2D
 
 const COLONY_CAMERA = preload("res://Scripts/colony_camera.gd")
 const DATA = preload("res://Scripts/game_data.gd")
+var port_layout=preload("res://Scripts/port_layout.gd").new()
+var placement_orientation := 0
+var port_preview := {}
 const BUILDING = preload("res://Scripts/building.gd")
 const WORKER = preload("res://Scripts/worker.gd")
 const SOURCE = preload("res://Scripts/resource_source.gd")
@@ -17,7 +20,10 @@ const IMMIGRATION = preload("res://Scripts/immigration.gd")
 var settlement = SETTLEMENT.new()
 var logistics = LOGISTICS.new()
 var clearance = preload("res://Scripts/site_clearance.gd").new()
+var gold = preload("res://Scripts/gold_economy.gd").new()
 var immigration
+var merchant
+var commerce=preload("res://Scripts/commerce.gd").new()
 var jobs: Array = []
 var gardens: Array = []
 const GARDEN = preload("res://Scripts/garden.gd")
@@ -44,6 +50,7 @@ var stock: Dictionary:
 	get:
 		var total := DATA.empty_stock()
 		for building in buildings:
+			if building.kind=="trading_port": continue
 			for resource in total:
 				total[resource] += building.stored.get(resource, 0)
 		return total
@@ -78,11 +85,14 @@ var preview_texture: Texture2D
 var preview_check_time := 0.0
 
 func _ready() -> void:
+	commerce.game=self
+	port_layout.game=self
 	settlement.game = self
 	automation.game = self
 	saves.game = self
 	work_planner.game = self
 	logistics.game = self
+	gold.game = self
 	clearance.game = self
 	expansion_brush.game = self
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -111,6 +121,7 @@ func _ready() -> void:
 		layer.free()
 	spawn_tree(initial_produce_cell, 4)
 	spawn_tree(Vector2i(66,34), 6)
+	gold.restore({})
 	var starting_house = add_building("base", initial_base_cell, true)
 	base = starting_house
 	base.stored.merge(DATA.STARTING_STOCK, true)
@@ -137,6 +148,9 @@ func _ready() -> void:
 	immigration.z_index = 10
 	add_child(immigration)
 	immigration.hide()
+	merchant=preload("res://Scripts/merchant.gd").new()
+	merchant.game=self
+	add_child(merchant)
 	placement_overlay = Node2D.new()
 	placement_overlay.z_index = 100
 	add_child(placement_overlay)
@@ -208,7 +222,7 @@ func can_place_garden(cell: Vector2i) -> bool:
 	var rect := Rect2i(cell, Vector2i(2,2))
 	for y in range(2):
 		for x in range(2):
-			if not is_walkable(cell + Vector2i(x,y)) or clearance.reserved(cell + Vector2i(x,y)):
+			if not is_walkable(cell + Vector2i(x,y)) or clearance.reserved(cell + Vector2i(x,y)) or port_layout.reserved(cell+Vector2i(x,y)):
 				placement_reason = "A horta exige terra livre e acessível."
 				return false
 	for source in sources + gardens:
@@ -237,13 +251,13 @@ func detach_building_tasks(building, removing: bool) -> void:
 	for worker in workers:
 		var references_ticket: bool = not worker.ticket.is_empty() and (worker.ticket.source == building or worker.ticket.destination == building)
 		if worker.target == building or worker.clear_site_id == building.entity_id or references_ticket or (worker.home == building and worker.state in ["to_craft", "crafting", "to_home"]):
-			worker.interrupt_task()
+			var finish_delivery: bool=removing and worker.assigned_home==building
+			worker.interrupt_task(finish_delivery)
+			if finish_delivery and worker.cargo>0: worker.return_home()
 		if removing:
 			if worker.home == building: worker.home = base
 			if worker.assigned_home == building:
-				worker.assigned_home = workplace_for(worker.assignment)
-				if worker.assigned_home == null: worker.assigned_home = base
-				worker.home = worker.assigned_home
+				worker.assign_to("idle",base)
 			if worker.move_destination == building: worker.move_destination = null
 	for ticket in logistics.tickets.duplicate():
 		if ticket.source == building or ticket.destination == building: logistics.tickets.erase(ticket)
@@ -253,6 +267,7 @@ func detach_building_tasks(building, removing: bool) -> void:
 func remove_building(building, cancelled: bool) -> void:
 	if building == base or not buildings.has(building): return
 	if not cancelled and (not building.demolition_started or not settlement.residents(building).is_empty()): return
+	commerce.before_removal(building)
 	var salvage: Dictionary = building.stored.duplicate()
 	if cancelled and not building.work_started:
 		for resource in building.materials.delivered:
@@ -264,6 +279,9 @@ func remove_building(building, cancelled: bool) -> void:
 			for resource in DATA.RECIPES[building.crafting]:
 				salvage[resource] = salvage.get(resource, 0) + DATA.RECIPES[building.crafting][resource]
 	buildings.erase(building)
+	if building.kind=="trading_port" and is_instance_valid(merchant):
+		merchant.port_id=0
+		merchant.next_attempt=-1.0
 	detach_building_tasks(building, true)
 	if selection == building: select_entity(null)
 	if hud.residence_filter == building: hud.close_residents(); hud.residence_filter = null
@@ -272,6 +290,7 @@ func remove_building(building, cancelled: bool) -> void:
 	# Separate resources spatially so every pile remains selectable and accessible.
 	var spots: Array[Vector2i] = building.footprint()
 	spots.append(building.door())
+	if building.kind=="trading_port": spots.assign(port_layout.layout(building.origin,building.orientation).land)
 	var index := 0
 	for resource in salvage:
 		if salvage[resource] <= 0: continue
@@ -325,6 +344,9 @@ func can_place_job(mode: String, cell: Vector2i) -> bool:
 		return placement_reason.is_empty()
 	if mode == "garden": return can_place_garden(cell)
 	placement_reason = ""
+	if mode=="survey":
+		placement_reason=gold.survey_reason(cell)
+		if not placement_reason.is_empty(): return false
 	var planting := mode != "expand"
 	if mode == "survey" and not buildings.any(func(b): return b.kind == "stone" and b.completed and b.level >= 2):
 		placement_reason = "Melhore um depósito de pedra para o nível 2."
@@ -344,6 +366,9 @@ func can_place_job(mode: String, cell: Vector2i) -> bool:
 	for y in range(height):
 		for x in range(3):
 			var spot := cell + Vector2i(x,y)
+			if port_layout.reserved(spot):
+				placement_reason="Este espaço está reservado para o porto e seus acessos."
+				return false
 			if clearance.reserved(spot):
 				placement_reason = "Este espaço está reservado para retirar materiais de uma obra."
 				return false
@@ -404,7 +429,7 @@ func place_job(mode: String, cell: Vector2i, automatic := false, repeat := false
 	var job = JOB.new()
 	if mode == "expand": job.setup_expansion(self,cell,expansion_brush_size,expansion_preview)
 	else: job.setup(self,mode,cell,job_entry(cell,4 if mode == "plant" else 3))
-	
+	if mode=="survey": gold.register_survey(job)
 	entities.add_child(job)
 	jobs.append(job)
 	rebuild_navigation()
@@ -414,15 +439,17 @@ func place_job(mode: String, cell: Vector2i, automatic := false, repeat := false
 
 func complete_job(job) -> void:
 	if job.kind == "survey":
-		notify("Investigação concluída: %d pedras. Selecione a área para abrir a pedreira." % job.deposit)
+		notify("Investigação concluída: %d %s. Selecione a área para abrir a jazida." % [job.deposit,DATA.RESOURCES[job.deposit_resource].name])
 		return
 	if job.kind == "quarry":
 		var source = SOURCE.new()
 		entities.add_child(source)
 		source.setup_quarry(self, job.origin, job.deposit)
+		source.resource_kind=job.deposit_resource
+		gold.mark(job.origin,"opened")
 		sources.append(source)
 		rebuild_navigation()
-		notify("Pedreira aberta. Mineiros extraem e transportam a pedra.")
+		notify("Jazida de ouro aberta. Aloque mineiros no posto de mineração." if job.deposit_resource=="gold_ore" else "Pedreira aberta. Mineiros extraem e transportam a pedra.")
 		return
 	if job.kind == "plant":
 		spawn_tree(job.origin)
@@ -442,6 +469,8 @@ func complete_job(job) -> void:
 			source.initial_reserve = 120
 			sources.append(source)
 			layer.free()
+			gold.discoveries[source.origin]={"resource":"stone","reserve":120,"state":"opened"}
+			for spot in source.cells: gold.surveyed_cells[spot]=source.origin
 		notify("Território ampliado!" + (" Uma jazida de 120 pedras foi descoberta." if discovered else " Mais espaço para sua vila."))
 	rebuild_navigation()
 
@@ -484,15 +513,16 @@ func coastal_aid() -> bool:
 	return true
 
 func progression_text() -> String:
+	if village_level>=3: return gold.progression_text()
 	if upgrade_ready(): return "Evolução disponível! Abra Vila: expandir / evoluir para chegar ao nível %d." % (village_level + 1)
 	if total_delivered.produce < 10 or total_delivered.stone < 10: return "Abasteça a vila: Hortifruti %d/10 · pedra %d/10" % [mini(10,total_delivered.produce),mini(10,total_delivered.stone)]
 	if village_level == 3: return "Vila próspera! Continue expandindo e renovando seus pomares."
 	return "Sugestão: renove os pomares e amplie a costa. Evolução: " + cost_status(upgrade_cost())
 
-func add_building(kind: String, cell: Vector2i, ready_now := false):
+func add_building(kind: String, cell: Vector2i, ready_now := false, orientation := 0):
 	var building = BUILDING.new()
 	entities.add_child(building)
-	building.setup(self, kind, cell, ready_now)
+	building.setup(self, kind, cell, ready_now, orientation)
 	buildings.append(building)
 	return building
 
@@ -505,6 +535,7 @@ func spawn_worker(kind: String, home, start: Vector2):
 	return worker
 
 func rebuild_navigation() -> void:
+	port_layout.route_cache.clear()
 	navigation.region = land.get_used_rect()
 	navigation.cell_size = Vector2(16, 16)
 	navigation.offset = Vector2(8, 8)
@@ -519,7 +550,7 @@ func rebuild_navigation() -> void:
 					navigation.set_point_solid(cell)
 	for building in buildings:
 		if building.preparing_site: continue
-		for cell in building.footprint():
+		for cell in building.blocking_cells():
 			if navigation.is_in_boundsv(cell):
 				navigation.set_point_solid(cell)
 	for job in jobs:
@@ -571,6 +602,7 @@ func can_afford(cost: Dictionary) -> bool:
 func available_stock() -> Dictionary:
 	var available := DATA.empty_stock()
 	for building in buildings:
+		if building.kind=="trading_port": continue
 		for resource in available: available[resource] += logistics.available(building, resource)
 	# Outstanding orders reserve their unfunded balance immediately, even before
 	# a worker claims a delivery. Cargo already withdrawn is not reserved twice.
@@ -587,6 +619,8 @@ func resource_breakdown(resource: String) -> Dictionary:
 	var carried := 0
 	for worker in workers:
 		if worker.cargo_resource == resource: carried += worker.cargo
+	carried+=commerce.extra_transit(resource)
+	for pile in logistics.piles: carried+=pile.stored.get(resource,0)
 	return {"available": available, "stored": stored, "reserved": stored - available, "carried": carried}
 
 func missing_resources(cost: Dictionary) -> Dictionary:
@@ -626,42 +660,78 @@ func activity_count(activity: String) -> int:
 			count += 1
 	return count
 
-func workplace_for(activity: String):
+func workplace_count(building, activity := "") -> int:
+	return workers.filter(func(w): return w.assigned_home==building and (activity.is_empty() or w.assignment==activity)).size()
+
+func workplace_capacity(building, activity: String) -> int:
+	if not is_instance_valid(building) or not building.completed or building.demolition_requested: return 0
+	if activity=="carrier" and village_level<2: return 0
+	if activity in ["gold_mining","smelter"] and village_level<3: return 0
+	if building.kind=="gold_mining" and activity=="gold_mining": return DATA.ECONOMY.GOLD_POST_WORKERS
+	if building.kind=="smelter" and activity=="smelter": return DATA.ECONOMY.SMELTER_WORKERS
+	if building.kind==activity or (building==base and activity in ["idle","builder","food","wood","stone","carrier"]): return 2147483647
+	return 0
+
+func workplace_for(activity: String, from := Vector2.INF):
 	if activity == "carrier": return base if village_level >= 2 else null
 	if activity in ["idle", "builder"]:
 		return base
 	var best = null
-	var least := 2147483647
+	var least := INF
+	var distance := INF
+	if from==Vector2.INF: from=cell_center(base.door())
 	for building in buildings:
 		if building.kind != activity or not building.completed or building.demolition_requested:
 			continue
-		var assigned := 0
-		for worker in workers:
-			if worker.assigned_home == building:
-				assigned += 1
-		if assigned < least:
-			least = assigned
+		var capacity := workplace_capacity(building,activity)
+		var assigned := workplace_count(building,activity)
+		if capacity<=assigned: continue
+		var route := route_to_cell(from,building.door())
+		if route.is_empty(): continue
+		var occupancy := float(assigned) if capacity==2147483647 else float(assigned)/capacity
+		var length := work_planner.route_length(from,route)
+		if occupancy<least or (is_equal_approx(occupancy,least) and length<distance):
+			least = occupancy
+			distance=length
 			best = building
 	return best if best != null else (base if activity in ["food", "stone", "wood"] else null)
 
-func change_allocation(activity: String, change: int) -> bool:
+func allocation_available(activity: String) -> bool:
+	for worker in workers:
+		if worker.assignment!="idle": continue
+		var destination=workplace_for(activity,worker.position)
+		if is_instance_valid(destination) and workplace_capacity(destination,activity)>workplace_count(destination,activity) and not route_to_cell(worker.position,destination.door()).is_empty(): return true
+	return false
+
+func allocation_reason(activity: String) -> String:
+	if activity_count("idle")==0: return "Sem trabalhadores livres. Reduza outra atividade ou atraia colonos."
+	if activity in ["gold_mining","smelter"] and village_level<3: return "Evolua a base para o nível 3."
+	if activity=="carrier" and village_level<2: return "Desbloqueia na vila nível 2"
+	if activity in ["gold_mining","smelter"]:
+		var posts: Array=buildings.filter(func(b): return b.kind==activity and b.completed and not b.demolition_requested)
+		if not posts.is_empty() and posts.all(func(b): return workplace_count(b,activity)>=workplace_capacity(b,activity)): return "Todos os postos desta atividade estão lotados."
+	return "" if allocation_available(activity) else "Sem posto acessível com vaga para esta atividade."
+
+func change_allocation(activity: String, change: int, local_building=null) -> bool:
 	if not DATA.ACTIVITIES.has(activity) or activity == "idle" or change == 0:
 		return false
 	var from_activity := "idle" if change > 0 else activity
 	var to_activity := activity if change > 0 else "idle"
-	var destination = workplace_for(to_activity)
-	if not is_instance_valid(destination):
-		notify("Conclua o prédio desta atividade antes de alocar trabalhadores.")
-		return false
 	# Prefer a worker without cargo; a carrier finishes its current delivery first.
 	var candidate = null
+	var destination = null
 	for worker in workers:
-		if worker.assignment == from_activity:
+		if worker.assignment == from_activity and (change>0 or local_building==null or worker.assigned_home==local_building):
+			var target_building=local_building if change>0 and local_building!=null else workplace_for(to_activity,worker.position)
+			if not is_instance_valid(target_building) or workplace_capacity(target_building,to_activity)<=workplace_count(target_building,to_activity): continue
+			if change>0 and route_to_cell(worker.position,target_building.door()).is_empty(): continue
 			candidate = worker
+			destination=target_building
 			if worker.cargo == 0:
 				break
 	if candidate == null:
-		notify("Sem trabalhadores livres. Reduza outra atividade ou atraia colonos." if change > 0 else "Não há trabalhadores nesta atividade.")
+		if activity_count(from_activity)>0: notify("Sem posto acessível com vaga para esta atividade.")
+		else: notify("Sem trabalhadores livres. Reduza outra atividade ou atraia colonos." if change > 0 else "Não há trabalhadores nesta atividade.")
 		return false
 	candidate.assign_to(to_activity, destination)
 	notify("Distribuição atualizada. Quem já está entregando termina a viagem antes de trocar de função.")
@@ -671,6 +741,14 @@ func can_place(kind: String, origin: Vector2i) -> bool:
 	placement_reason = ""
 	if not kind in DATA.CONSTRUCTIBLE:
 		return false
+	if kind in ["gold_mining","smelter","trading_port"] and village_level<3:
+		placement_reason="Evolua a base para o nível 3."
+		return false
+	if kind=="trading_port":
+		port_preview=port_layout.inspect(origin,placement_orientation)
+		placement_reason=port_preview.reason
+		if placement_reason.is_empty() and not can_afford(DATA.ECONOMY.PORT_COST): placement_reason=cost_status(DATA.ECONOMY.PORT_COST)
+		return placement_reason.is_empty()
 	if not can_afford(DATA.BUILDINGS[kind].cost):
 		placement_reason = cost_status(DATA.BUILDINGS[kind].cost)
 		return false
@@ -683,6 +761,9 @@ func can_place(kind: String, origin: Vector2i) -> bool:
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
 			var cell := origin + Vector2i(x, y)
+			if port_layout.reserved(cell):
+				placement_reason="Este espaço está reservado para o porto e seus acessos."
+				return false
 			if land.get_cell_source_id(cell) < 0:
 				placement_reason = "Há água sob a construção. Aterre toda a área de %d × %d células." % [grid_size.x,grid_size.y]
 				return false
@@ -706,7 +787,7 @@ func can_place(kind: String, origin: Vector2i) -> bool:
 			placement_reason = "Não bloqueie a entrada de uma obra."
 			return false
 	var door := origin + DATA.building_door(kind)
-	if not is_walkable(door) or clearance.reserved(door):
+	if not is_walkable(door) or clearance.reserved(door) or port_layout.reserved(door):
 		placement_reason = "A entrada precisa de um quadrado livre na frente."
 		return false
 	for building in buildings:
@@ -742,7 +823,7 @@ func place_building(kind: String, origin: Vector2i, repeat := false):
 	if not can_place(kind, origin):
 		notify(placement_reason)
 		return null
-	var building = add_building(kind, origin)
+	var building = add_building(kind, origin, false, placement_orientation if kind=="trading_port" else 0)
 	clearance.prepare(building)
 	rebuild_navigation()
 	if not repeat: placement_kind = ""
@@ -758,8 +839,12 @@ func begin_placement(kind: String) -> void:
 		cancel_placement()
 		return
 	placement_kind = kind
-	preview_texture = DATA.building_texture(kind)
+	preview_texture = DATA.port_texture(placement_orientation) if kind=="trading_port" else DATA.building_texture(kind)
 	preview_check_time = 0
+	# Switching from surveying must not briefly present its old error as a
+	# construction restriction, even while the simulation is paused.
+	preview_cell = world_cell(get_global_transform_with_canvas().affine_inverse() * pointer_position) - placement_offset()
+	preview_valid = can_place(kind, preview_cell)
 	select_entity(null)
 	notify("Escolha onde construir. Verde = permitido. Esc ou botão direito cancela.")
 
@@ -833,6 +918,15 @@ func entity_at(cell: Vector2i):
 			return source
 	return null
 
+func rotate_port() -> void:
+	if placement_kind!="trading_port": return
+	placement_orientation=(placement_orientation+1)%4
+	preview_texture=DATA.port_texture(placement_orientation)
+	preview_valid=can_place(placement_kind,preview_cell)
+	preview_check_time=0.1
+	hud.refresh()
+	placement_overlay.queue_redraw()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if event.echo: return
@@ -851,6 +945,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if camera.input_blocked(): return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_R: rotate_port()
 			KEY_1: begin_placement("food")
 			KEY_2: begin_placement("stone")
 			KEY_3: begin_placement("wood")
@@ -901,6 +996,8 @@ func _process(delta: float) -> void:
 		automation.tick(delta * simulation_speed)
 		if process_mode != Node.PROCESS_MODE_DISABLED: saves.tick(delta)
 		immigration.tick(delta * simulation_speed)
+		commerce.tick()
+		merchant.tick(delta * simulation_speed)
 	message_time = maxf(0, message_time - delta)
 	if not placement_kind.is_empty():
 		var pointer_world := get_global_transform_with_canvas().affine_inverse() * pointer_position
@@ -977,6 +1074,24 @@ func draw_placement() -> void:
 		return
 	var color := Color("a6d887") if preview_valid else Color("f2847c")
 	var origin := Vector2(preview_cell * 16)
+	if placement_kind=="trading_port":
+		if preview_texture!=null: placement_overlay.draw_texture_rect(preview_texture,DATA.building_art_rect(placement_kind,preview_cell,preview_texture),false,Color(1,1,1,0.7))
+		for cell in port_preview.get("cells",{}):
+			var valid: bool=port_preview.cells[cell]
+			var cell_color := Color("a6d887") if valid else Color("f2847c")
+			var rect := Rect2(Vector2(cell*16),Vector2(16,16))
+			placement_overlay.draw_rect(rect,Color(cell_color,0.22))
+			placement_overlay.draw_rect(rect,cell_color,false,0.5)
+		var mask: Dictionary=port_layout.layout(preview_cell,placement_orientation)
+		var start := cell_center(mask.loading)
+		var end := cell_center(mask.dock)
+		placement_overlay.draw_line(start,end,Color("ffeab5"),1)
+		placement_overlay.draw_circle(start,4,Color("ffeab5"))
+		var direction: Vector2=Vector2(mask.direction)
+		var side := Vector2(-direction.y,direction.x)
+		placement_overlay.draw_line(end,end-direction*6+side*4,Color("ffeab5"),1)
+		placement_overlay.draw_line(end,end-direction*6-side*4,Color("ffeab5"),1)
+		return
 	var grid_size := DATA.building_size(placement_kind)
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
@@ -993,8 +1108,7 @@ func draw_placement() -> void:
 			placement_overlay.draw_rect(rect, Color(cell_color, 0.8), false, 0.5)
 	var entry := cell_center(preview_cell + DATA.building_door(placement_kind))
 	if preview_texture != null:
-		var texture_size := preview_texture.get_size() * (0.5 if placement_kind in ["house", "workshop"] else 1.0)
-		placement_overlay.draw_texture_rect(preview_texture, Rect2(origin, texture_size), false, Color(color, 0.7))
+		placement_overlay.draw_texture_rect(preview_texture,DATA.building_art_rect(placement_kind,preview_cell,preview_texture),false,Color(color,0.7))
 	var entry_color := Color("a6d887") if is_walkable(preview_cell + DATA.building_door(placement_kind)) else Color("f2847c")
 	placement_overlay.draw_rect(Rect2(entry-Vector2(8,8),Vector2(16,16)),entry_color,false,1)
 	placement_overlay.draw_circle(entry, 4, entry_color)

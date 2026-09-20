@@ -3,6 +3,8 @@ var stored: Dictionary = {}
 var cell: Vector2i
 var selected := false
 var resource_kind := ""
+var trade_id := 0
+var trade_leg := ""
 
 func door() -> Vector2i: return cell
 func _draw() -> void:

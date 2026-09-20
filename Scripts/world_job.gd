@@ -14,6 +14,7 @@ var selected := false
 var duration := 4.0
 var priority := 1
 var deposit := 0
+var deposit_resource := "stone"
 var released := false
 var brush_size := 3
 var discovery_eligible := true # Legacy 3x3 expansion orders retain their behavior.
@@ -33,15 +34,30 @@ func open_quarry() -> bool:
 	progress = 0
 	duration = 24
 	materials.required = {"wood": 10, "stone": 5}
-	game.notify("Pedreira marcada: entregue materiais e aloque um mineiro.")
+	if deposit_resource=="gold_ore":
+		activity="builder"
+		duration=game.DATA.ECONOMY.GOLD_OPEN_SECONDS
+		materials.required=game.DATA.ECONOMY.GOLD_OPEN_COST.duplicate()
+	game.notify("Jazida de ouro marcada: entregue materiais e aloque um construtor." if deposit_resource=="gold_ore" else "Pedreira marcada: entregue materiais e aloque um mineiro.")
 	queue_redraw()
 	return true
 func release_site() -> void:
 	if kind != "survey" or not completed: return
 	released = true
+	game.gold.mark(origin,"released")
 	game.rebuild_navigation()
 	game.select_entity(null)
 	queue_redraw()
+
+func cancel_survey() -> bool:
+	if kind!="survey" or completed: return false
+	for worker in game.workers:
+		if worker.target==self: worker.interrupt_task()
+	game.jobs.erase(self)
+	game.select_entity(null)
+	game.rebuild_navigation()
+	queue_free()
+	return true
 func setup(controller, type: String, cell: Vector2i, entry: Vector2i) -> void:
 	game = controller
 	kind = type
@@ -82,6 +98,6 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO,size), color, false,1)
 	# A surveyed deposit is visible before excavation, using the existing native art.
 	if (kind == "survey" and completed) or kind == "quarry":
-		var stone: Texture2D = game.DATA.CATALOG.entry("Stone").texture
+		var stone: Texture2D = game.DATA.gold_deposit_texture(false) if deposit_resource=="gold_ore" else game.DATA.CATALOG.entry("Stone").texture
 		draw_texture(stone, (size - stone.get_size()) / 2.0)
 	if not completed: draw_rect(Rect2(4,size.y - 5,40 * progress / duration,3),color)

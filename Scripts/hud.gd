@@ -28,7 +28,7 @@ var build_buttons: Dictionary = {}
 var refresh_timer := 0.0
 var top_panel: PanelContainer
 var bottom_panel: PanelContainer
-var workforce_panel: PanelContainer
+var workforce_panel: Panel
 var workforce_summary: Label
 var activity_controls: Dictionary = {}
 var construction_menu: HFlowContainer
@@ -72,9 +72,16 @@ var menu_save_button: Button
 var menu_quit_button: Button
 var menu_save_status: Label
 var paused_before_menu := false
+var brand_label: Label
+var workforce_view
+var team_button: Button
+var rotate_port_button: Button
+var trade_button: Button
+var trade_window
 
 func scroll_content(parent: Node) -> ScrollContainer:
 	var scroll := ScrollContainer.new()
+	scroll.follow_focus=true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -85,7 +92,9 @@ func layout_windows() -> void:
 	if not is_instance_valid(residents_window): return
 	var viewport := get_viewport_rect().size
 	update_context_layout()
-	workforce_panel.size = Vector2(260, minf(360, viewport.y - 96))
+	workforce_panel.size = Vector2(minf(600,viewport.x-32), minf(530, viewport.y - 160))
+	workforce_panel.position=(viewport-workforce_panel.size)/2
+	brand_label.visible=viewport.x>=1000
 	residents_window.size = Vector2(minf(760, viewport.x - 48), minf(440, viewport.y - 48))
 	residents_window.position = (viewport - residents_window.size) / 2
 	extinction_panel.reset_size()
@@ -93,13 +102,16 @@ func layout_windows() -> void:
 	if restart_dialog.visible: restart_dialog.popup_centered()
 	if is_instance_valid(game_menu) and game_menu.visible: game_menu.popup_centered(Vector2i(minf(360,viewport.x-48),220))
 	if is_instance_valid(policy_window) and policy_window.visible: policy_window.popup_centered(Vector2i(minf(520,viewport.x-48),minf(330,viewport.y-48)))
+	if is_instance_valid(trade_window) and trade_window.visible: trade_window.popup_centered(Vector2i(minf(740,viewport.x-40),minf(600,viewport.y-48)))
+	objective_label.position=Vector2(18,top_panel.get_combined_minimum_size().y+12)
 	objective_label.size = Vector2(364, 20)
-	notification_label.position = Vector2(400, 62)
+	notification_label.position = Vector2(400, top_panel.get_combined_minimum_size().y+12)
 	notification_label.size = Vector2(maxf(100, viewport.x - 418), 20)
 
 func map_visible_rect() -> Rect2:
 	var viewport := get_viewport_rect().size
-	return Rect2(Vector2(20, 88), Vector2(viewport.x - 40, viewport.y - 184))
+	var top := top_panel.get_combined_minimum_size().y+32 if is_instance_valid(top_panel) else 116.0
+	return Rect2(Vector2(10,top), Vector2(viewport.x-20,maxf(100,viewport.y-top-84)))
 
 func toggle_workforce() -> void:
 	workforce_panel.visible = not workforce_panel.visible
@@ -108,13 +120,14 @@ func toggle_workforce() -> void:
 
 func update_context_layout() -> void:
 	var context: bool = is_instance_valid(game.selection) or not game.action_mode.is_empty() or not game.placement_kind.is_empty()
+	bottom_panel.visible=not workforce_panel.visible
 	detail_header.visible = context
 	detail_label.visible = context
-	bottom_panel.offset_top = -198 if context else -88
+	bottom_panel.offset_top = -198 if context else -84
 	if is_instance_valid(game.selection) and game.selection.has_method("description") and game.action_mode.is_empty() and game.placement_kind.is_empty():
 		bottom_panel.offset_top = -198 if game.selection is GARDEN else (-174 if game.selection.is_tree else -120)
 	bottom_panel.offset_bottom = -10
-	var width := minf(1000 if context else 760, get_viewport_rect().size.x - 20)
+	var width := minf(1080, get_viewport_rect().size.x - 20)
 	var margin := (get_viewport_rect().size.x - width) / 2
 	bottom_panel.offset_left = margin
 	bottom_panel.offset_right = -margin
@@ -138,10 +151,8 @@ func button(text: String, callback: Callable) -> Button:
 	var result := Button.new()
 	result.text = text
 	result.custom_minimum_size.y = 30
-	result.add_theme_font_size_override("font_size", 13)
-	for style in ["normal", "hover", "pressed", "disabled"]:
-		result.add_theme_stylebox_override(style, MENU_THEME.panel(5))
-	result.focus_mode = Control.FOCUS_NONE
+	result.add_theme_font_size_override("font_size", 15)
+	result.focus_mode = Control.FOCUS_ALL
 	result.pressed.connect(callback)
 	return result
 
@@ -161,56 +172,68 @@ func _ready() -> void:
 	top_panel.offset_right = -10
 	top_panel.offset_top = 8
 	add_child(top_panel)
-	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 8)
-	top_panel.add_child(top)
-	var brand := VBoxContainer.new()
-	top.add_child(brand)
-	brand.add_child(label("CIVIZ IMPERIUM", 16, GOLD))
-	stock_label = label("", 12)
-	stock_label.mouse_filter = Control.MOUSE_FILTER_STOP
-	stock_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	stock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var top_rows := VBoxContainer.new()
+	top_rows.add_theme_constant_override("separation",5)
+	top_panel.add_child(top_rows)
+	var heading := HBoxContainer.new()
+	heading.add_theme_constant_override("separation",12)
+	top_rows.add_child(heading)
+	var emblem := TextureRect.new()
+	emblem.texture=preload("res://Assets/UI/Brand/civiz_emblem.png")
+	emblem.custom_minimum_size=Vector2(32,32)
+	emblem.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	emblem.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	heading.add_child(emblem)
+	brand_label=label("CIVIZ IMPERIUM",14,GOLD)
+	brand_label.add_theme_font_override("font",MENU_THEME.TITLE)
+	heading.add_child(brand_label)
 	var resources := HBoxContainer.new()
-	resources.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	resources.alignment = BoxContainer.ALIGNMENT_CENTER
-	top.add_child(resources)
+	resources.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	resources.alignment=BoxContainer.ALIGNMENT_END
+	resources.add_theme_constant_override("separation",8)
+	heading.add_child(resources)
+	stock_label=label("Disponível",12)
+	stock_label.hide()
 	resources.add_child(stock_label)
-	stock_label.text = "Disponível"
-	for resource in game.DATA.RESOURCES:
+	for resource in ["produce","wood","stone","gold_bar","gold_ore","axe","pickaxe"]:
 		var item := HBoxContainer.new()
 		resources.add_child(item)
 		var icon := TextureRect.new()
-		icon.texture = game.DATA.resource_texture(resource)
-		icon.custom_minimum_size = Vector2(32,32)
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture=game.DATA.resource_texture(resource)
+		icon.custom_minimum_size=Vector2(24,24)
+		icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		item.add_child(icon)
-		var amount := label("0", 13)
-		amount.mouse_filter = Control.MOUSE_FILTER_STOP
+		var amount := label("0",15)
+		amount.custom_minimum_size.x=30
+		amount.mouse_filter=Control.MOUSE_FILTER_STOP
 		item.add_child(amount)
-		resource_labels[resource] = {"amount":amount,"icon":icon}
-	pause_button = button("Pausar", func():
-		if not game.settlement.extinct: game.simulation_paused = not game.simulation_paused
-	)
-	workforce_toggle = button("Habitantes", toggle_workforce)
-	workforce_toggle.toggle_mode = true
+		resource_labels[resource]={"amount":amount,"icon":icon}
+	var top := HBoxContainer.new()
+	top_rows.add_child(top)
+	workforce_toggle=button("Habitantes",toggle_workforce)
+	workforce_toggle.toggle_mode=true
 	top.add_child(workforce_toggle)
-	top.add_child(button("Vila", func(): game.select_entity(game.base)))
+	top.add_child(button("Vila",func(): game.select_entity(game.base)))
+	top.add_child(button("Aterrar",func(): game.begin_action("expand")))
+	var spacer := Control.new()
+	spacer.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	top.add_child(spacer)
+	pause_button=button("Pausar",func():
+		if not game.settlement.extinct: game.simulation_paused=not game.simulation_paused
+	)
 	top.add_child(pause_button)
-	speed_button = button("1x", func(): game.simulation_speed = 2.0 if game.simulation_speed == 1.0 else 1.0)
+	speed_button=button("1x",func(): game.simulation_speed=2.0 if game.simulation_speed==1.0 else 1.0)
 	top.add_child(speed_button)
-	top.add_child(get_node("/root/Localization").selector())
-	top.add_child(button("Centrar", game.center_camera))
-	var restart := ConfirmationDialog.new()
-	restart_dialog = restart
-	restart.title = "Recomeçar Civiz Imperium"
-	restart.dialog_text = "Reiniciar a civilização? O progresso não salvo será perdido."
-	restart.ok_button_text = "Reiniciar"
-	restart.cancel_button_text = "Continuar jogando"
-	restart.confirmed.connect(func(): get_tree().reload_current_scene())
-	add_child(restart)
-	top.add_child(button("Reiniciar", func(): restart.popup_centered()))
+	top.add_child(button("Centrar",game.center_camera))
+	top.add_child(button("Menu",open_game_menu))
+	restart_dialog=ConfirmationDialog.new()
+	restart_dialog.title="Recomeçar Civiz Imperium"
+	restart_dialog.dialog_text="Reiniciar a civilização? O progresso não salvo será perdido."
+	restart_dialog.ok_button_text="Reiniciar"
+	restart_dialog.cancel_button_text="Continuar jogando"
+	restart_dialog.confirmed.connect(func(): get_tree().reload_current_scene())
+	add_child(restart_dialog)
 	objective_label = label("", 12, Color("fff0d9"))
 	objective_label.position = Vector2(18, 62)
 	objective_label.clip_text = true
@@ -219,47 +242,38 @@ func _ready() -> void:
 	objective_label.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(objective_label)
 	objective_label.tooltip_text = "WASD: mover · Q/E ou roda: zoom · Shift: repetir · Home: centrar · Espaço: pausar · Esc: fechar / cancelar"
-	workforce_panel = panel()
+	# A fixed outer Control prevents dynamic list minimum sizes from growing the
+	# whole window. Only the inner ScrollContainer may expand its content.
+	workforce_panel = Panel.new()
+	workforce_panel.add_theme_stylebox_override("panel", MENU_THEME.panel(8))
+	workforce_panel.clip_contents = true
 	workforce_panel.position = Vector2(10, 86)
 	workforce_panel.z_index = 100
 	workforce_panel.hide()
-	workforce_panel.custom_minimum_size.x = 260
 	add_child(workforce_panel)
 	var workforce := VBoxContainer.new()
 	workforce_content = workforce
 	workforce.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	workforce.add_theme_constant_override("separation", 3)
 	workforce_panel.add_child(workforce)
+	workforce.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	workforce.offset_left = 8
+	workforce.offset_top = 8
+	workforce.offset_right = -8
+	workforce.offset_bottom = -8
 	var workforce_heading := HBoxContainer.new()
 	workforce.add_child(workforce_heading)
-	var workforce_title := label("DISTRIBUIR TRABALHO", 13, GOLD)
+	var workforce_title := label("Equipes da ilha", 20, GOLD)
 	workforce_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	workforce_heading.add_child(workforce_title)
 	workforce_heading.add_child(button("×", toggle_workforce))
-	workforce_summary = label("", 12, MUTED)
+	workforce_summary = label("", 15, MUTED)
+	workforce_summary.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	workforce.add_child(workforce_summary)
-	var assignments := VBoxContainer.new()
-	assignments.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	assignments.add_theme_constant_override("separation", 3)
-	scroll_content(workforce).add_child(assignments)
-	for activity in ["builder", "food", "stone", "wood", "workshop", "carrier"]:
-		var row := HBoxContainer.new()
-		assignments.add_child(row)
-		var text := label(game.DATA.ACTIVITIES[activity].name, 13)
-		text.custom_minimum_size.x = 94
-		row.add_child(text)
-		var minus := button("−", func(): game.change_allocation(activity, -1))
-		var plus := button("+", func(): game.change_allocation(activity, 1))
-		for b in [minus, plus]:
-			b.custom_minimum_size = Vector2(32,28)
-			for style in ["normal","hover","pressed","disabled"]: b.add_theme_stylebox_override(style, MENU_THEME.panel(4))
-		row.add_child(minus)
-		var count := label("0", 15, GOLD)
-		count.custom_minimum_size.x = 27
-		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		row.add_child(count)
-		row.add_child(plus)
-		activity_controls[activity] = {"minus": minus, "plus": plus, "amount": count}
+	workforce_view=preload("res://Scripts/workforce_view.gd").new()
+	workforce_view.game=game
+	scroll_content(workforce).add_child(workforce_view)
+	activity_controls=workforce_view.controls
 	workforce.add_child(button("Conhecer habitantes", func(): open_residents(null)))
 	workforce.add_child(button("Vila: expandir / evoluir", func(): game.select_entity(game.base)))
 	bottom_panel = panel()
@@ -284,6 +298,9 @@ func _ready() -> void:
 	inspection_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	inspection_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	detail_header.add_child(inspection_icon)
+	rotate_port_button=button("Girar porto · R",game.rotate_port)
+	rotate_port_button.hide()
+	detail_header.add_child(rotate_port_button)
 	detail_header.add_child(button("Fechar", func():
 		game.cancel_placement()
 		game.select_entity(null)
@@ -297,16 +314,17 @@ func _ready() -> void:
 	progress.show_percentage = false
 	bottom.add_child(progress)
 	construction_menu = HFlowContainer.new()
-	construction_menu.add_theme_constant_override("h_separation", 10)
+	construction_menu.add_theme_constant_override("h_separation", 6)
 	construction_menu.add_theme_constant_override("v_separation", 8)
 	bottom.add_child(construction_menu)
 	construction_menu.add_child(label("CONSTRUIR", 12, MUTED))
 	for kind in game.DATA.CONSTRUCTIBLE:
 		var b := button("", game.begin_placement.bind(kind))
-		b.custom_minimum_size = Vector2(92,56)
+		b.custom_minimum_size = Vector2(82,56)
 		b.toggle_mode = true
-		for style in ["normal", "hover", "pressed"]:
-			b.add_theme_stylebox_override(style, MENU_THEME.icon_frame())
+		b.add_theme_stylebox_override("normal",MENU_THEME.flat(Color("ede2c9"),Color("baa581"),4))
+		b.add_theme_stylebox_override("hover",MENU_THEME.flat(Color("ffedba"),GOLD,4))
+		b.add_theme_stylebox_override("pressed",MENU_THEME.flat(Color("efd28c"),GOLD,4))
 		var contents := VBoxContainer.new()
 		contents.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		contents.offset_top = 4
@@ -330,6 +348,13 @@ func _ready() -> void:
 	building_actions.add_theme_constant_override("h_separation", 10)
 	building_actions.add_theme_constant_override("v_separation", 8)
 	bottom.add_child(building_actions)
+	team_button=button("Gerenciar equipe",func():
+		if not workforce_panel.visible: toggle_workforce()
+		if is_instance_valid(game.selection): workforce_view.reveal(game.selection.kind)
+	)
+	building_actions.add_child(team_button)
+	trade_button=button("Negociar no porto",func(): trade_window.open())
+	building_actions.add_child(trade_button)
 	recruit_button = button("Atrair colonos\n5 Hortifruti + 3 madeiras", func(): game.immigration.prepare_expedition())
 	building_actions.add_child(recruit_button)
 	plant_button = button("Plantar árvore\n2 Hortifruti", func(): game.begin_action("plant"))
@@ -348,7 +373,10 @@ func _ready() -> void:
 	building_actions.add_child(replant_button)
 	demolish_button = button("Demolir · 10s", func(): game.selection.request_demolition())
 	building_actions.add_child(demolish_button)
-	cancel_work_button = button("Cancelar obra", func(): game.cancel_construction(game.selection))
+	cancel_work_button = button("Cancelar obra", func():
+		if game.selection.has_method("cancel_survey"): game.selection.cancel_survey()
+		else: game.cancel_construction(game.selection)
+	)
 	building_actions.add_child(cancel_work_button)
 	cancel_demolish_button = button("Cancelar demolição", func(): game.selection.cancel_demolition())
 	building_actions.add_child(cancel_demolish_button)
@@ -442,6 +470,9 @@ func _ready() -> void:
 	create_residents_window()
 	create_extinction_panel()
 	create_game_menu()
+	trade_window=preload("res://Scripts/trade_view.gd").new()
+	trade_window.game=game
+	add_child(trade_window)
 	refresh()
 	for child in building_actions.get_children():
 		if child is Button: child.add_theme_font_size_override("font_size", 13)
@@ -602,14 +633,18 @@ func refresh() -> void:
 	var resting := 0
 	for worker in game.workers:
 		if worker.state == "resting": resting += 1
-	workforce_summary.text = "%d/%d moradores · %d livres · %d em casa" % [game.workers.size(), game.population_limit(), free_workers, resting]
+	var unavailable: int=game.workers.filter(func(w): return w.state in ["resting","to_rest"] or w.person.nutrition<=game.DATA.HUNGER_STOP).size()
+	var active: int=game.workers.filter(func(w): return w.assignment!="idle" and w.state not in ["idle","resting","to_rest"] and w.person.nutrition>game.DATA.HUNGER_STOP).size()
+	workforce_summary.text="%d habitantes · %d livres · %d atribuídos\n%d ativos · %d indisponíveis · Moradia %d/%d"%[game.workers.size(),free_workers,game.workers.size()-free_workers,active,unavailable,game.workers.size(),game.population_limit()]
 	for activity in activity_controls:
 		var controls: Dictionary = activity_controls[activity]
 		var count: int = game.activity_count(activity)
 		controls.amount.text = str(count)
 		controls.minus.disabled = count == 0
-		controls.plus.disabled = free_workers == 0 or not is_instance_valid(game.workplace_for(activity))
-		controls.plus.tooltip_text = "Desbloqueia na vila nível 2" if activity == "carrier" and game.village_level < 2 else ("Construa a oficina" if activity == "workshop" and not is_instance_valid(game.workplace_for(activity)) else "Alocar habitante livre")
+		var reason: String=game.allocation_reason(activity)
+		controls.plus.disabled=not reason.is_empty()
+		controls.plus.tooltip_text=reason if not reason.is_empty() else "Alocar habitante livre"
+	workforce_view.refresh()
 	stock_label.text = "Disponível"
 	var tooltips: PackedStringArray = []
 	for resource in resource_labels:
@@ -625,16 +660,20 @@ func refresh() -> void:
 	speed_button.text = "%dx" % game.simulation_speed
 	objective_label.text = game.progression_text()
 	for kind in build_buttons:
+		build_buttons[kind].disabled=kind in ["gold_mining","smelter","trading_port"] and game.village_level<3
 		build_buttons[kind].tooltip_text = "%s\n%s\nMateriais: %s\n%s" % [game.DATA.BUILDINGS[kind].name,game.DATA.BUILDINGS[kind].description,game.DATA.cost_text(game.DATA.BUILDINGS[kind].cost),game.cost_status(game.DATA.BUILDINGS[kind].cost)]
 		build_buttons[kind].set_pressed_no_signal(game.placement_kind == kind)
 	var selected = game.selection
 	inspection_icon.hide()
+	rotate_port_button.visible=game.placement_kind=="trading_port"
 	if is_instance_valid(selected) and selected.has_method("wake") and selected.person.tool != "":
 		inspection_icon.texture = game.DATA.resource_texture(selected.person.tool)
 		inspection_icon.show()
 	var is_building: bool = is_instance_valid(selected) and selected.has_method("enqueue")
 	var is_base: bool = is_building and selected.completed and selected.kind == "base"
 	var is_garden: bool = is_instance_valid(selected) and selected is GARDEN
+	team_button.visible=is_building and selected.completed and selected.kind in ["food","wood","stone","gold_mining","smelter","workshop"]
+	trade_button.visible=is_building and selected.completed and selected.kind=="trading_port"
 	garden_button.visible = is_building and selected.kind == "food" and selected.completed and not selected.demolition_requested
 	garden_button.disabled = not game.gardens_unlocked() or not game.can_afford(game.DATA.GARDEN_COST)
 	garden_button.tooltip_text = "Melhore um depósito de comida para o nível 2 para criar hortas." if not game.gardens_unlocked() else "Cercado: 10 madeiras uma vez. Plantio: 2 Hortifruti por ciclo. 60s; 15 Hortifruti."
@@ -655,6 +694,9 @@ func refresh() -> void:
 	demolish_button.disabled = is_building and selected.upgrading
 	demolish_button.tooltip_text = "Conclua a melhoria antes de demolir." if is_building and selected.upgrading else "Construtor: 10s. Moradores se mudam; estoque fica no chão. Sem reembolso da construção."
 	cancel_work_button.visible = is_building and not selected.completed and selected.kind != "base"
+	var surveying: bool=is_instance_valid(selected) and selected.has_method("cancel_survey") and selected.kind=="survey" and not selected.completed
+	cancel_work_button.visible=cancel_work_button.visible or surveying
+	cancel_work_button.text="Cancelar investigação" if surveying else "Cancelar obra"
 	cancel_work_button.tooltip_text = "Antes da primeira martelada, materiais entregues ficam no chão; depois, são perdidos. Reservas e cargas em trânsito são preservadas."
 	cancel_demolish_button.visible = is_building and selected.demolition_requested
 	cancel_demolish_button.disabled = is_building and selected.demolition_started
@@ -683,7 +725,10 @@ func refresh() -> void:
 	survey_button.tooltip_text = "Requer depósito de pedra nível 2; aloque um mineiro."
 	var report: bool = is_instance_valid(selected) and selected.has_method("open_quarry") and selected.kind == "survey" and selected.completed and not selected.released
 	quarry_button.visible = report
-	release_button.visible = report
+	if report: quarry_button.text="Abrir jazida · 10 madeiras + 10 pedras" if selected.deposit_resource=="gold_ore" else "Abrir pedreira · 10 madeiras + 5 pedras"
+	var depleted_gold: bool=is_instance_valid(selected) and selected.has_method("take") and selected.get("resource_kind")=="gold_ore" and selected.remaining==0 and not selected.removed
+	release_button.visible = report or depleted_gold
+	if depleted_gold: building_actions.show()
 	orchard_button.visible = is_instance_valid(selected) and ((selected.has_method("description") and selected.is_tree) or (selected.has_method("open_quarry") and selected.kind == "plant"))
 	if orchard_button.visible: orchard_button.text = "Renovação do pomar: " + ("ligada" if game.automation.orchards.has(selected.origin) else "desligada")
 	priority_button.visible = is_instance_valid(selected) and selected.has_method("needs_work") and selected.needs_work()
@@ -712,6 +757,8 @@ func refresh() -> void:
 			var size: Vector2i = game.DATA.building_size(game.placement_kind)
 			detail_label.text = "Área: %d × %d células + entrada livre na frente.\n" % [size.x,size.y] + detail_label.text
 			detail_label.text += "\nMateriais soltos serão retirados; habitantes sairão antes da construção."
+			if game.placement_kind=="trading_port":
+				detail_label.text="Mar ao %s · 5 × 2 em terra; 5 × 3 em água · R para girar\n"%game.port_layout.LABELS[game.placement_orientation]+("Ponto de carga marcado em dourado. Clique para construir." if game.preview_valid else game.placement_reason)
 		if game.action_mode == "expand":
 			var plan: Dictionary = game.expansion_preview
 			title_label.text = "Aterrar terreno · Pincel %d × %d" % [game.expansion_brush_size,game.expansion_brush_size]
@@ -738,6 +785,13 @@ func refresh() -> void:
 		else:
 			detail_label.text = "%d/%d — %s. %s" % [selected.used(),selected.capacity(),"Cheio" if selected.used() >= selected.capacity() else "Espaço disponível",game.DATA.cost_text(selected.stored)]
 			if selected.kind == "workshop": detail_label.text = selected.workshop_status()
+			if selected.kind=="trading_port": detail_label.text=game.merchant.description()+"\n"+game.DATA.cost_text(selected.stored)
+			if selected.kind=="smelter": detail_label.text=game.gold.smelter_status(selected)+"\n5 minérios + 2 madeiras → 1 barra · 15s por bancada\n"+game.DATA.cost_text(selected.stored)
+			if selected.kind=="smelter":
+				var batches: Array=selected.smelting_batches
+				progress.visible=batches.any(func(b): return b.active)
+				progress.value=maxf(batches[0].progress,batches[1].progress)/game.DATA.ECONOMY.SMELTER_SECONDS*100
+				progress.tooltip_text="Bancadas: %.1f/15s · %.1f/15s"%[batches[0].progress,batches[1].progress]
 		if selected.completed and not selected.demolition_requested:
 			detail_label.text += "\n" + selected.FEEDBACK.next_level(selected)
 		if not selected.warning.is_empty() and not detail_label.text.contains(selected.warning.text): detail_label.text += "\n" + selected.warning.text
@@ -750,7 +804,7 @@ func refresh() -> void:
 		progress.visible = true
 		progress.value = 100.0 * selected.age / game.DATA.GARDEN_GROW_SECONDS if selected.phase == "growing" else (100.0 * selected.remaining / game.DATA.GARDEN_YIELD if selected.phase == "ripe" else 100.0 * selected.progress / selected.work_duration())
 	elif is_instance_valid(selected) and selected.has_method("description"):
-		title_label.text = "Ciclo da árvore" if selected.is_tree else "Jazida de pedra"
+		title_label.text = "Ciclo da árvore" if selected.is_tree else ("Jazida de ouro" if selected.resource_kind=="gold_ore" else "Jazida de pedra")
 		detail_label.text = selected.description()
 		if selected.is_tree and not selected.removed:
 			progress.visible = true
@@ -758,7 +812,7 @@ func refresh() -> void:
 		progress.tooltip_text = "Evolução até o próximo estágio" if selected.stage < 4 else "Estoque restante para coleta"
 	elif is_instance_valid(selected) and selected.has_method("needs_work"):
 		title_label.text = {"plant": "Plantio", "expand": "Expansão costeira", "survey": "Investigação de jazida", "quarry": "Abertura de pedreira"}[selected.kind]
-		detail_label.text = ("Reserva %s: %d pedras. Abrir consome materiais e trabalho." % ["pequena" if selected.deposit == 300 else ("média" if selected.deposit == 600 else "grande"), selected.deposit]) if report else selected.materials.text(game.DATA)
+		detail_label.text = ("Reserva: %d %s. Abrir consome materiais e trabalho." % [selected.deposit,game.DATA.RESOURCES[selected.deposit_resource].name]) if report else selected.materials.text(game.DATA)
 	elif is_instance_valid(selected) and selected.get("stored") != null:
 		title_label.text = "Materiais aguardando transporte"
 		detail_label.text = game.DATA.cost_text(selected.stored)
@@ -767,6 +821,7 @@ func refresh() -> void:
 		detail_label.text = "Construa casas para receber colonos. Renove os pomares e distribua o trabalho. O Rei também participa da vida da vila."
 	notification_label.text = game.message if game.message_time > 0 else "WASD mover · Q/E zoom · Shift repetir · Home centrar · Espaço pausar"
 	update_context_layout()
+	if is_instance_valid(trade_window) and trade_window.visible: trade_window.refresh()
 	if residents_window.visible: refresh_residents()
 	if game.settlement.extinct and not extinct_shown:
 		extinct_shown = true

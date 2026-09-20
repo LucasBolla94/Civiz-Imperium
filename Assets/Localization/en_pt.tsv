@@ -429,3 +429,145 @@ O salvamento antigo não pôde ser importado. O original foi preservado.	The old
 A importação precisa de um espaço livre. O salvamento antigo foi preservado.	Import needs an empty slot. The old save has been preserved.
 Os cinco espaços estão ocupados. Apague uma ilha para criar outra.	All five slots are occupied. Delete an island to create another.
 Escolha uma ilha no menu Jogar antes de salvar.	Choose an island in the Play menu before saving.
+V0.0.6.1 · Ouro e novos horizontes	V0.0.6.1 · Gold and new horizons
+Equipes da ilha	Island workforce
+Gerenciar equipe	Manage team
+Aterrar	Reclaim land
+Posto de mineração de ouro	Gold mining post
+Mineração de ouro	Gold mining
+Mineiro de ouro	Gold miner
+Minério de ouro	Gold ore
+Barras de ouro	Gold bars
+Fundição	Smelter
+Fundidor	Smelter worker
+Ouro	Gold
+Até três mineiros. Entregam minério aqui; requer base nível 3.	Up to three miners deliver ore here. Requires a level 3 village.
+Duas bancadas: 5 minérios + 2 madeiras → 1 barra. Requer base nível 3.	Two benches: 5 ore + 2 wood → 1 bar. Requires a level 3 village.
+Evolua a base para o nível 3.	Advance the village to level 3.
+Este terreno sobrepõe uma investigação anterior.	This area overlaps a previous survey.
+Este terreno já foi investigado. A jazida não se regenera.	This area was already surveyed. Deposits do not regenerate.
+Investigação concluída: %d %s. Selecione a área para abrir a jazida.	Survey complete: %d %s. Select the area to open the deposit.
+Jazida de ouro marcada: entregue materiais e aloque um construtor.	Gold deposit marked: deliver materials and assign a builder.
+Jazida de ouro aberta. Aloque mineiros no posto de mineração.	Gold deposit opened. Assign miners at the mining post.
+Jazida de ouro	Gold deposit
+Jazida esgotada. Selecione Liberar terreno para reutilizar a área.	Deposit exhausted. Select Release land to reuse this area.
+Jazida de ouro · %d minérios restantes · até dois postos de extração	Gold deposit · %d ore remaining · up to two extraction positions
+Jazida esgotada — libere o terreno para construir.	Exhausted deposit — release the land to build here.
+Abrir jazida · 10 madeiras + 10 pedras	Open deposit · 10 wood + 10 stone
+Reserva: %d %s. Abrir consome materiais e trabalho.	Deposit: %d %s. Opening requires materials and work.
+Fundição: %d lotes em andamento	Smelter: %d batches in progress
+Saída cheia — aguardando transporte de barras	Output full — waiting for bar transport
+Aguardando minério de ouro	Waiting for gold ore
+Aguardando madeira para o forno	Waiting for furnace wood
+Aguardando trabalhador da fundição	Waiting for a smelter worker
+Falta trabalhador da fundição.	No smelter worker assigned.
+Fundindo barras de ouro	Smelting gold bars
+Indo trabalhar na fundição	Walking to the smelter
+Aguardando fundição disponível	Waiting for an available smelter
+Posto de mineração cheio ou indisponível — aguardando transporte	Mining post full or unavailable — waiting for transport
+Mudança pendente — entregando a carga	Assignment pending — delivering cargo
+Sem posto acessível com vaga para esta atividade.	No accessible workplace with room for this activity.
+Sem melhorias adicionais nesta versão.	No additional upgrades in this version.
+Próximo nível: mineração de ouro, fundição e comércio marítimo.	Next level: gold mining, smelting and sea trade.
+5 minérios + 2 madeiras → 1 barra · 15s por bancada	5 ore + 2 wood → 1 bar · 15s per bench
+%d trabalhando · %d a caminho · %d descansando · %d aguardando	%d working · %d travelling · %d resting · %d waiting
+%d mudanças pendentes	%d pending assignments
+Conclua um posto acessível para esta atividade.	Complete an accessible workplace for this activity.
+%d/%d vagas ocupadas	%d/%d positions filled
+Cancelar investigação	Cancel survey
+Era do ouro: melhore o depósito de pedra para investigar terrenos.	The gold age: upgrade stone storage to survey new land.
+Ouro descoberto: selecione a área e abra a jazida com um construtor.	Gold discovered: select the site and open it with a builder.
+Investigue terrenos para encontrar ouro. Resultados permanecem fixos por local.	Survey new land to find gold. Each location keeps its discovery.
+Construa um posto de mineração para extrair o ouro descoberto.	Build a mining post to extract the discovered gold.
+Aloque mineiros de ouro em Habitantes. Eles usam picaretas.	Assign gold miners in Residents. They use pickaxes.
+Construa uma fundição: minério e madeira viram barras de ouro.	Build a smelter: ore and wood become gold bars.
+Aloque fundidores e transportadores para produzir e guardar barras.	Assign smelter workers and carriers to produce and store bars.
+Produza cinco barras para construir o porto comercial e abrir novas rotas.	Produce five bars to build a trading port and open new routes.
+Bancadas: %.1f/15s · %.1f/15s	Benches: %.1f/15s · %.1f/15s
+Porto comercial	Trading port
+Porto	Port
+Girar porto · R	Rotate port · R
+Sul	South
+Oeste	West
+Norte	North
+Leste	East
+Mar ao %s · 5 × 2 em terra; 5 × 3 em água · R para girar	Sea to the %s · 5 × 2 on land; 5 × 3 on water · R to rotate
+Ponto de carga marcado em dourado. Clique para construir.	Loading point marked in gold. Click to build.
+Entreposto na costa. Recebe comerciantes e até 200 unidades de carga; requer base nível 3.	Coastal trading post. Receives merchants and up to 200 cargo units; requires a level 3 base.
+Cada ilha pode ter apenas um porto, incluindo obras e demolições.	Each island can have only one port, including construction and demolition sites.
+O porto exige 5 × 2 células em terra, 5 × 3 em água e aproximação livre para o barco.	The port needs 5 × 2 land cells, 5 × 3 water cells and a clear boat approach.
+O ponto de carga precisa de um caminho por terra até a vila.	The loading point needs a land route to the village.
+Este porto bloquearia a passagem dos habitantes.	This port would block residents' paths.
+Este porto impediria o acesso a um recurso.	This port would block access to a resource.
+O cais precisa de mar aberto; um lago fechado não recebe comerciantes.	The dock needs open sea; an enclosed lake cannot receive merchants.
+Este espaço está reservado para o porto e seus acessos.	This space is reserved for the port and its access routes.
+Este espaço está reservado para o porto e a aproximação dos barcos.	This space is reserved for the port and approaching boats.
+Aguarde o barco passar antes de aterrar este trecho.	Wait for the boat to pass before filling this water.
+Aguardando a conclusão do porto.	Waiting for port construction to finish.
+Porto sem acesso por terra.	Port has no land access.
+A aproximação do barco está bloqueada.	The boat approach is blocked.
+Porto sem rota para o mar aberto.	Port has no route to the open sea.
+Nova tentativa em 30 segundos.	Retrying in 30 seconds.
+Comerciante a caminho do porto.	Merchant sailing to the port.
+Comerciante atracado. Novos negócios disponíveis por 120 segundos.	Merchant docked. New trades available for 120 seconds.
+Comerciante: faltam 30 segundos para novos negócios. Pedidos confirmados serão aguardados.	Merchant: 30 seconds left for new trades. Confirmed orders will be awaited.
+Comerciante deixando a ilha.	Merchant leaving the island.
+Rota do comerciante bloqueada; aguardando passagem por água.	Merchant route blocked; waiting for a clear water passage.
+Prazo encerrado · Aguardando entregas	Trading window closed · Waiting for deliveries
+Prazo encerrado · Preparando partida	Trading window closed · Preparing departure
+Novos negócios: %ds · Pedidos confirmados aguardam entrega	New trades: %ds · Confirmed orders await delivery
+Próxima tentativa de visita: %ds	Next visit attempt: %ds
+Demolição aguardando a partida do comerciante.	Demolition waiting for the merchant to leave.
+Negociar no porto	Trade at port
+Comprar	Buy
+Vender	Sell
+Compra	Purchase
+Venda	Sale
+Quantidade de unidades	Quantity of units
+Confirmar negócio	Confirm trade
+Preparar outro pedido	Prepare another order
+Levar material ao galpão	Move goods to warehouse
+Pedidos e entregas	Orders and deliveries
+Cancelar negócio	Cancel trade
+Comprar %d unidades por %d barras	Buy %d units for %d gold bars
+Vender %d unidades por %d barras	Sell %d units for %d gold bars
+Orçamento do comerciante: %d barras · Recebimento: %d/200 unidades	Merchant budget: %d gold bars · Receiving: %d/200 units
+Vende %d · Compra %d	Sells %d · Buys %d
+Origem: %s\nDestino: %s	From: %s\nTo: %s
+Origem:	From:
+Destino:	To:
+Transportadores ocupados ou descansando; o pedido aguardará na fila.	Carriers are busy or resting; the order will wait in the queue.
+A carga será levada ao barco em viagens; nada é trocado ao clicar.	Carriers will make trips to the boat; clicking does not exchange goods.
+Pedido %d confirmado. O pagamento depende da entrega completa.	Order %d confirmed. Payment requires complete delivery.
+Transporte ao galpão solicitado. Confirme o negócio depois que o material chegar.	Warehouse transfer requested. Confirm the trade once the goods arrive.
+Entregue ao barco: %d/%d	Delivered to boat: %d/%d
+Carga recebida · Restam %d unidades até o galpão	Goods received · %d units still to reach the warehouse
+Cancelado · Restam %d unidades para devolver	Cancelled · %d units still to return
+Na fila, aguardando o negócio anterior.	Queued, waiting for the previous trade.
+Escolha uma quantidade em múltiplos de 10.	Choose a quantity in multiples of 10.
+A visita está encerrada ou o comerciante ainda não atracou.	The trading window is closed or the merchant has not docked yet.
+Aloque pelo menos um transportador com acesso ao porto em Habitantes.	Assign at least one carrier with port access in Residents.
+O comerciante não tem orçamento ou limite disponível para esta venda.	The merchant has insufficient budget or buying allowance for this sale.
+O comerciante não tem esta quantidade disponível.	The merchant does not have this quantity available.
+Preserve a reserva alimentar de três unidades por habitante.	Keep a food reserve of three units per resident.
+Leve este material ao galpão para vender	Move these goods to a general warehouse before trading
+Material insuficiente, reservado ou sem acesso nos galpões gerais.	Insufficient, reserved or inaccessible goods in general warehouses.
+Sem espaço livre no recebimento do porto.	No free space in the port receiving area.
+Sem espaço reservado para receber a mercadoria nos galpões gerais.	No available receiving space in general warehouses.
+Identificação de confirmação ausente.	Missing confirmation identifier.
+Aguardando galpão livre e caminho para recolher a carga.	Waiting for warehouse space and a route to collect the cargo.
+Aguardando o comerciante desta ordem.	Waiting for this order's merchant.
+Aguardando transportador, carga em viagem ou caminho livre.	Waiting for a carrier, cargo in transit or an open route.
+Venda pausada para preservar a reserva alimentar.	Sale paused to preserve the food reserve.
+Aguardando transportadores em Habitantes.	Waiting for carriers assigned in Residents.
+Aguardando espaço no porto para garantir a devolução da carga.	Waiting for port space to guarantee cargo can be returned.
+Recebimento do porto ocupado; aguardando espaço.	Port receiving area occupied; waiting for space.
+Negócio %d concluído. Carga recebida no porto; aguardando transporte ao galpão.	Trade %d complete. Goods received at port; waiting for warehouse transport.
+Negócio cancelado; materiais serão devolvidos ao galpão.	Trade cancelled; goods will return to a warehouse.
+Carga comercial preservada; aguardando galpão ou caminho.	Trade cargo preserved; waiting for a warehouse or route.
+Levando carga do negócio %d	Carrying cargo for trade %d
+Negócio cancelado pela demolição; devolução em andamento.	Trade cancelled by demolition; goods are being returned.
+Ordem inconsistente cancelada ao carregar; bens preservados.	Inconsistent order cancelled on load; owned goods preserved.
+Todos os postos desta atividade estão lotados.	All workplaces for this activity are full.
+%d habitantes · %d livres · %d atribuídos\n%d ativos · %d indisponíveis · Moradia %d/%d	%d residents · %d unassigned · %d assigned\n%d active · %d unavailable · Housing %d/%d
+Área já investigada. Para construir no terreno liberado, escolha um prédio no menu Construir. Investigar novamente não renova a jazida.	This area has already been surveyed. To build on cleared land, choose a building from Build. Surveying again does not renew the deposit.

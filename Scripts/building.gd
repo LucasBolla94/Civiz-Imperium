@@ -15,6 +15,7 @@ var entity_id := 0
 var kind: String
 var origin: Vector2i
 var grid_size: Vector2i
+var orientation := 0
 var completed := false
 var progress := 0.0
 var stored: Dictionary = {}
@@ -36,10 +37,15 @@ var preparing_site := false
 var demolition_requested := false
 var demolition_started := false
 var demolition_progress := 0.0
+var smelting_batches: Array = []
+var fire_until_msec := 0
+var fire_sprite: Sprite2D
 
 func request_demolition() -> bool:
 	if kind == "base" or not completed or upgrading or demolition_requested: return false
 	demolition_requested = true
+	game.commerce.before_demolition(self)
+	if kind=="trading_port" and is_instance_valid(game.merchant): game.merchant.close_orders()
 	materials = MATERIALS.new()
 	game.detach_building_tasks(self, false)
 	game.settlement.tick_moves()
@@ -55,9 +61,11 @@ func cancel_demolition() -> bool:
 	return true
 
 func demolition_ready() -> bool:
+	if kind=="trading_port" and is_instance_valid(game.merchant) and game.merchant.port_id==entity_id and game.merchant.state!="waiting": return false
 	return demolition_requested and game.settlement.residents(self).is_empty()
 
 func demolition_status() -> String:
+	if kind=="trading_port" and is_instance_valid(game.merchant) and game.merchant.port_id==entity_id and game.merchant.state!="waiting": return "Demolição aguardando a partida do comerciante."
 	var occupants: Array = game.settlement.residents(self)
 	if not occupants.is_empty():
 		if occupants.any(func(w): return is_instance_valid(w.move_destination)): return "Moradores em mudança"
@@ -66,11 +74,14 @@ func demolition_status() -> String:
 	if game.route_to_cell(game.cell_center(game.base.door()), door()).is_empty(): return "Demolição aguardando acesso"
 	return "Demolição aguardando construtor"
 
-func setup(controller, building_kind: String, cell: Vector2i, ready_now := false) -> void:
+func setup(controller, building_kind: String, cell: Vector2i, ready_now := false, facing := 0) -> void:
 	game = controller
 	entity_id = 1
 	for existing in game.buildings: entity_id = maxi(entity_id, existing.entity_id + 1)
 	kind = building_kind
+	orientation=posmod(facing,4)
+	if kind=="smelter":
+		for i in game.DATA.ECONOMY.SMELTER_WORKERS: smelting_batches.append({"active":false,"progress":0.0,"worker":0})
 	origin = cell
 	stored = game.DATA.empty_stock()
 	grid_size = game.DATA.building_size(kind)
@@ -79,9 +90,20 @@ func setup(controller, building_kind: String, cell: Vector2i, ready_now := false
 	position = Vector2(origin * 16) + Vector2(grid_size.x * 8, grid_size.y * 16)
 	sprite = Sprite2D.new()
 	sprite.texture = game.DATA.building_texture(kind)
+	if kind=="trading_port":
+		sprite.texture=game.DATA.port_texture(orientation)
+		sprite.z_index=-1 # Workers stand above the loading apron and pier artwork.
 	if kind in ["house", "workshop"]: sprite.scale = Vector2.ONE * 0.5
-	sprite.position = Vector2(0, -sprite.texture.get_height() * sprite.scale.y * 0.5)
+	var artwork: Rect2=game.DATA.building_art_rect(kind,origin,sprite.texture)
+	sprite.position=artwork.get_center()-position
 	add_child(sprite)
+	if kind=="smelter" and ResourceLoader.exists("res://Assets/Buildings/Gold/smelter_fire.png"):
+		fire_sprite=Sprite2D.new()
+		fire_sprite.texture=load("res://Assets/Buildings/Gold/smelter_fire.png")
+		fire_sprite.hframes=4
+		fire_sprite.position=Vector2(0,-40)
+		fire_sprite.hide()
+		add_child(fire_sprite)
 	warning_sprite = Sprite2D.new()
 	var bubble := AtlasTexture.new()
 	bubble.atlas = FEEDBACK.BUBBLES
@@ -102,7 +124,15 @@ func footprint() -> Array[Vector2i]:
 		for x in range(grid_size.x): result.append(origin + Vector2i(x, y))
 	return result
 
-func door() -> Vector2i: return origin + game.DATA.building_door(kind)
+func blocking_cells() -> Array[Vector2i]:
+	var result: Array[Vector2i]=[]
+	if kind=="trading_port": result.assign(game.port_layout.layout(origin,orientation).blocked)
+	else: result=footprint()
+	return result
+
+func door() -> Vector2i:
+	if kind=="trading_port": return game.port_layout.layout(origin,orientation).loading
+	return origin + game.DATA.building_door(kind)
 func housing_capacity() -> int:
 	return 3 if kind == "base" else (game.DATA.HOUSE_CAPACITY + (level - 1) * game.DATA.HOUSE_UPGRADE_CAPACITY if kind == "house" else 0)
 func capacity() -> int:
@@ -115,9 +145,11 @@ func accepts(resource: String) -> bool:
 	if not completed or demolition_requested or capacity() == 0: return false
 	if kind in ["base", "warehouse"]: return true
 	if kind == "workshop": return resource in ["axe", "pickaxe"]
+	if kind in ["smelter","trading_port"]: return false # Only dedicated production/trade deliveries supply these buffers.
 	return game.DATA.resource_for_activity(kind) == resource
 func store(resource: String, amount: int) -> int:
 	var accepted := mini(amount, maxi(0, capacity() - used()))
+	if kind=="smelter": accepted=mini(accepted,maxi(0,game.DATA.ECONOMY.SMELTER_CAPS.get(resource,0)-stored.get(resource,0)))
 	stored[resource] = stored.get(resource, 0) + accepted
 	return accepted
 func needs_work() -> bool:
@@ -166,7 +198,7 @@ func desired_tools(tool: String) -> int:
 	if level < 2: return 0
 	if level == 2: return tool_targets[tool]
 	var activity: String = "wood" if tool == "axe" else "stone"
-	return ceili(game.activity_count(activity) * 0.5)
+	return ceili((game.activity_count(activity)+(game.activity_count("gold_mining") if tool=="pickaxe" else 0)) * 0.5)
 
 func tool_demand(tool: String) -> int:
 	if tool_orders[tool] > 0: return tool_orders[tool]
@@ -178,6 +210,9 @@ func tool_demand(tool: String) -> int:
 	return maxi(0, desired_tools(tool) - projected)
 
 func input_demand(resource: String) -> int:
+	if kind=="smelter":
+		if not completed or demolition_requested or resource not in ["wood","gold_ore"]: return 0
+		return maxi(0,game.DATA.ECONOMY.SMELTER_CAPS[resource]-stored.get(resource,0))
 	if kind != "workshop" or not completed or upgrading or demolition_requested: return 0
 	var need := 0
 	for tool in tool_targets:
@@ -224,6 +259,11 @@ func refresh_visual() -> void:
 	sprite.modulate = Color.WHITE if completed else Color(1.0, 0.85, 0.6, 0.45)
 	if preparing_site: sprite.modulate.a = 0.2
 	queue_redraw()
+
+func _process(_delta: float) -> void:
+	if is_instance_valid(fire_sprite):
+		fire_sprite.visible=completed and not demolition_requested and not game.simulation_paused and Time.get_ticks_msec()<fire_until_msec and game.workers.any(func(w): return w.kind=="smelter" and w.assigned_home==self and w.state=="crafting")
+		if not game.simulation_paused: fire_sprite.frame=int(Time.get_ticks_msec()*0.006)%4
 
 func _draw() -> void:
 	if preparing_site:

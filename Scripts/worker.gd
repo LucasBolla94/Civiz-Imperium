@@ -11,6 +11,8 @@ var move_destination = null
 var selected := false
 var ticket: Dictionary = {}
 var cargo_resource := ""
+var trade_id := 0
+var trade_leg := ""
 var complaint_time := 0.0
 var spare_tools: Dictionary = {}
 var preferred_source = null
@@ -73,6 +75,11 @@ func assign_to(activity: String, workplace) -> void:
 	if cargo > 0 and state in ["to_home", "to_deliver"]:
 		status = "Concluindo entrega antes de trocar de função"
 		return
+	if cargo>0:
+		interrupt_task(true)
+		return_home()
+		status="Mudança pendente — entregando a carga"
+		return
 	if state in ["resting", "to_rest"]: return
 	interrupt_task()
 	apply_assignment()
@@ -90,6 +97,7 @@ func interrupt_task(preserve_cargo := false) -> void:
 	clear_site_id = 0
 	evacuation_destination = Vector2i(-999,-999)
 	game.work_planner.release(self)
+	if person!=null: game.gold.release_bench(self)
 	if is_instance_valid(home) and home.craft_reserved_by == self: home.craft_reserved_by = null
 	repath_attempts = 0
 	repath_delay = 0
@@ -98,8 +106,9 @@ func interrupt_task(preserve_cargo := false) -> void:
 	game.logistics.release(self)
 	ticket = {}
 	if cargo > 0 and not preserve_cargo:
-		game.logistics.drop(game.world_cell(position), cargo_resource, cargo)
+		game.logistics.drop(game.world_cell(position), cargo_resource, cargo, trade_id, trade_leg)
 		cargo = 0
+	if cargo==0: trade_id=0; trade_leg=""
 	path.clear()
 	target = null
 	timer = 0
@@ -189,8 +198,9 @@ func _process(delta: float) -> void:
 			var speed: float = 1.0 if equipped else game.DATA.TOOLLESS_SPEED
 			drain_work(delta, not equipped)
 			timer += delta * productivity * speed
-			while timer >= game.DATA.HARVEST_SECONDS and cargo < game.carry_capacity() and game.work_planner.available_claim(self):
-				timer -= game.DATA.HARVEST_SECONDS
+			var harvest_seconds: float=game.DATA.ECONOMY.GOLD_HARVEST_SECONDS if kind=="gold_mining" else game.DATA.HARVEST_SECONDS
+			while timer >= harvest_seconds and cargo < game.carry_capacity() and game.work_planner.available_claim(self):
+				timer -= harvest_seconds
 				var amount: int = game.work_planner.collect(self)
 				if amount == 0:
 					finish_harvest()
@@ -251,6 +261,15 @@ func _process(delta: float) -> void:
 				interrupt_task()
 				return
 			state = "crafting"
+			if kind=="smelter":
+				if game.gold.smelt(self,delta*productivity):
+					status="Fundindo barras de ouro"
+					drain_work(delta)
+					person.gain_xp("smelter",delta*0.2)
+				else:
+					interrupt_task()
+					status=game.gold.smelter_status(home)
+				return
 			if home.craft(delta * productivity):
 				status = "Produzindo ferramentas"
 				drain_work(delta)
@@ -357,6 +376,17 @@ func find_job() -> void:
 	if assignment != kind: apply_assignment()
 	if game.clearance.claim(self): return
 	if find_tool(): return
+	if kind=="smelter":
+		home=assigned_home
+		if game.gold.bench_for(self)>=0:
+			path=game.route_to_cell(position,home.door())
+			if not path.is_empty():
+				state="to_craft"
+				status="Indo trabalhar na fundição"
+				return
+			game.gold.release_bench(self)
+		status=game.gold.smelter_status(home) if is_instance_valid(home) and home.kind=="smelter" else "Aguardando fundição disponível"
+		return
 	if kind == "food" and game.settlement.food_units() < game.workers.size() * game.DATA.FOOD_RESERVE_PER_PERSON:
 		if take_harvest():
 			status = "Buscando Hortifruti — reserva alimentar baixa"
@@ -389,12 +419,8 @@ func find_job() -> void:
 	if kind == "workshop":
 		home = assigned_home
 		if home.kind != "workshop" or home.demolition_requested:
-			var replacement = game.workplace_for("workshop")
-			if replacement == null:
-				status = "Aguardando oficina disponível"
-				return
-			assigned_home = replacement
-			home = replacement
+			status = "Aguardando oficina disponível"
+			return
 		if home.can_craft() and not is_instance_valid(home.craft_reserved_by):
 			path = game.route_to_cell(position, home.door())
 			if not path.is_empty():
@@ -417,6 +443,9 @@ func find_job() -> void:
 	take_harvest()
 
 func take_harvest() -> bool:
+	if kind=="gold_mining" and game.gold.post_space(assigned_home,self)<=0:
+		status="Posto de mineração cheio ou indisponível — aguardando transporte"
+		return false
 	if game.logistics.storage_for(position, game.DATA.resource_for_activity(kind)) == null:
 		status = "Depósitos cheios — aguardando espaço"
 		return false
@@ -439,17 +468,18 @@ func take_harvest() -> bool:
 func finish_harvest() -> void:
 	game.work_planner.release(self)
 	target = null
-	if game.village_level >= 2 and game.activity_count("carrier") > 0 and cargo > 0:
+	if kind!="gold_mining" and game.village_level >= 2 and game.activity_count("carrier") > 0 and cargo > 0:
 		game.logistics.drop(game.world_cell(position), cargo_resource, cargo)
 		cargo = 0
 		state = "idle"
 	else: return_home()
 
 func return_home() -> void:
+	if cargo>0 and trade_id>0 and game.commerce.resume_cargo(self): return
 	if cargo == 0:
 		state = "idle"
 		return
-	home = game.logistics.storage_for(position, cargo_resource)
+	home = assigned_home if kind=="gold_mining" and assignment=="gold_mining" and is_instance_valid(assigned_home) and not assigned_home.demolition_requested else game.logistics.storage_for(position,cargo_resource)
 	if home == null:
 		interrupt_task()
 		status = "Depósitos cheios — carga preservada no chão"

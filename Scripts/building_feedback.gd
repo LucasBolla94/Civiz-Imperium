@@ -19,7 +19,13 @@ static func diagnose(building) -> Dictionary:
 		return {}
 	if building.capacity() > 0 and game.logistics.storage_free(building) <= 0:
 		return notice("Depósito cheio; libere espaço ou melhore o armazenamento.")
-	if building.kind not in ["food","wood","stone","workshop"]: return {}
+	if building.kind=="smelter":
+		var team: Array=game.workers.filter(func(w): return w.assignment=="smelter" and w.assigned_home==building)
+		if team.is_empty(): return notice("Falta trabalhador da fundição.","inhabitants")
+		if team.all(func(w): return w.state in ["resting","to_rest"]): return notice("Trabalhadores descansando.","inhabitants")
+		if not game.gold.can_start(building) and not building.smelting_batches.any(func(b): return b.active): return notice(game.gold.smelter_status(building))
+		return {}
+	if building.kind not in ["food","wood","stone","workshop","gold_mining"]: return {}
 	var activity: String = building.kind
 	var workers: Array = game.workers.filter(func(w): return w.assignment == activity and (activity != "workshop" or w.assigned_home == building))
 	if activity == "workshop":
@@ -44,9 +50,10 @@ static func diagnose(building) -> Dictionary:
 
 static func next_level(building) -> String:
 	var game = building.game
+	if building.kind in ["gold_mining","smelter","trading_port"]: return "Sem melhorias adicionais nesta versão."
 	if building.kind == "base":
 		if game.village_level >= 3: return "Nível máximo."
-		return "Próximo nível: transportadores e carga de 5 → 7." if game.village_level == 1 else "Próximo nível: nível 3 da vila; sem bônus adicional de produção."
+		return "Próximo nível: transportadores e carga de 5 → 7." if game.village_level == 1 else "Próximo nível: mineração de ouro, fundição e comércio marítimo."
 	if building.level >= game.DATA.MAX_BUILDING_LEVEL: return "Nível máximo."
 	if building.kind == "house":
 		return "Próximo nível: vagas %d → %d." % [building.housing_capacity(),building.housing_capacity()+game.DATA.HOUSE_UPGRADE_CAPACITY]

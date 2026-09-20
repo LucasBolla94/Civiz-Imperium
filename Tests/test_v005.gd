@@ -106,7 +106,8 @@ func run() -> void:
 	shop.request_demolition()
 	shop.build(10)
 	check(pile_total("wood") == 10 and pile_total("stone") == 16, "Unfinished workshop recipe and unused inputs are preserved")
-	check(game.workers[1].assignment == "workshop" and game.workers[1].assigned_home == game.base, "Removed workplace preserves profession with safe base fallback")
+	# V0.0.6.1 explicitly replaces profession migration after demolition.
+	check(game.workers[1].assignment == "idle" and game.workers[1].kind == "idle" and game.workers[1].assigned_home == game.base, "Removed workplace frees the worker after safe delivery")
 	# Housing: wait, reserve all destinations, walk, cancel and resume.
 	fresh()
 	stop_workers()

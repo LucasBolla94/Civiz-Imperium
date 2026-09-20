@@ -139,14 +139,16 @@ func take(amount: int, expected_kind := "") -> int:
 		set_stage(6)
 		return harvested
 	if remaining == 0 and (not is_tree or stage == 6):
-		removed = true
-		terrain_visual.hide()
+		game.gold.mark(origin,"exhausted")
+		removed = resource_kind!="gold_ore"
+		if removed: terrain_visual.hide()
 		game.rebuild_navigation()
-		game.notify("Fonte esgotada. O espaço está livre para novas construções ou plantio.")
+		game.notify("Jazida esgotada. Selecione Liberar terreno para reutilizar a área." if resource_kind=="gold_ore" else "Fonte esgotada. O espaço está livre para novas construções ou plantio.")
 	queue_redraw()
 	return harvested
 
 func description() -> String:
+	if resource_kind=="gold_ore": return "Jazida de ouro · %d minérios restantes · até dois postos de extração"%remaining if remaining>0 else "Jazida esgotada — libere o terreno para construir."
 	if removed: return "Recurso esgotado; espaço liberado."
 	if not is_tree: return ("Pedreira aberta: " if is_quarry else "Jazida: ") + "%d pedras restantes." % remaining
 	var text: String = game.DATA.TREE_NAMES[stage]
@@ -162,7 +164,9 @@ func description() -> String:
 	return text
 
 func _draw() -> void:
-	if is_quarry:
+	if is_quarry and resource_kind=="gold_ore":
+		if not removed: draw_texture_rect(game.DATA.gold_deposit_texture(remaining==0),Rect2(-24,-48,48,48),false)
+	elif is_quarry:
 		draw_colored_polygon(PackedVector2Array([Vector2(-18,-46),Vector2(12,-46),Vector2(12,-42),Vector2(21,-42),Vector2(21,-34),Vector2(24,-34),Vector2(24,-12),Vector2(18,-12),Vector2(18,-5),Vector2(-13,-5),Vector2(-13,-9),Vector2(-23,-9),Vector2(-23,-37),Vector2(-18,-37)]),Color("ad885d"))
 		draw_colored_polygon(PackedVector2Array([Vector2(-15,-40),Vector2(13,-40),Vector2(13,-35),Vector2(19,-35),Vector2(19,-15),Vector2(12,-15),Vector2(12,-10),Vector2(-12,-10),Vector2(-12,-14),Vector2(-18,-14),Vector2(-18,-32),Vector2(-15,-32)]),Color("675343"))
 		draw_rect(Rect2(-13,-33,28,19),Color("403d37"))
@@ -180,3 +184,11 @@ func _draw() -> void:
 	var color := Color("a6cbe4")
 	draw_rect(Rect2(-14,2,28,3), Color("233334"))
 	draw_rect(Rect2(-14,2,28 * fraction,3), color)
+
+func release_site() -> void:
+	if not is_quarry or remaining>0: return
+	removed=true
+	game.gold.mark(origin,"exhausted")
+	game.rebuild_navigation()
+	game.select_entity(null)
+	queue_redraw()

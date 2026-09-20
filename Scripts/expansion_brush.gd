@@ -33,6 +33,12 @@ func inspect(origin: Vector2i, size: int) -> Dictionary:
 		return result
 	var pending := {}
 	for cell in cells:
+		if is_instance_valid(game.merchant) and game.merchant.occupies(cell):
+			result.reason="Aguarde o barco passar antes de aterrar este trecho."
+			return result
+		if game.port_layout.reserved(cell):
+			result.reason="Este espaço está reservado para o porto e a aproximação dos barcos."
+			return result
 		pending[cell] = true
 		for job in game.jobs:
 			if job.reserves_ground() and (job.cells.has(cell) or job.door() == cell):

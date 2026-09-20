@@ -7,34 +7,44 @@ var piles: Array = []
 var next_id := 1
 
 func reserved(source, resource: String) -> int:
-	var total := 0
+	var total: int=game.commerce.reserved(source,resource)
 	for ticket in tickets:
+		if ticket.get("trade_id",0)>0: continue
 		if ticket.source == source and ticket.resource == resource and not ticket.picked: total += ticket.amount
 	return total
 
 func incoming(destination, resource := "") -> int:
-	var total := 0
+	var total: int=game.commerce.incoming(destination,resource)
 	for ticket in tickets:
+		if ticket.get("trade_id",0)>0: continue
 		if ticket.get("clearance",false): continue
 		if ticket.destination == destination and (resource == "" or ticket.resource == resource): total += ticket.amount
 	return total
 
 func available(source, resource: String) -> int:
+	if source is PILE and source.trade_id>0: return 0
+	if source.has_method("footprint") and source.kind=="trading_port": return 0
 	return maxi(0, int(source.stored.get(resource, 0)) - reserved(source, resource))
 
 func storage_free(building) -> int:
 	return maxi(0, building.capacity() - building.used() - incoming(building))
 
-func drop(cell: Vector2i, resource: String, amount: int) -> void:
+func resource_space(building, resource: String) -> int:
+	if building.kind=="smelter": return mini(storage_free(building),game.gold.smelter_space(building,resource))
+	return storage_free(building)
+
+func drop(cell: Vector2i, resource: String, amount: int, trade_id := 0, trade_leg := "") -> void:
 	if amount <= 0: return
 	for pile in piles:
-		if pile.cell == cell and pile.resource_kind == resource:
+		if pile.cell == cell and pile.resource_kind == resource and pile.trade_id==trade_id and pile.trade_leg==trade_leg:
 			pile.stored[resource] += amount
 			return
 	var pile = PILE.new()
 	pile.cell = cell
 	pile.position = game.cell_center(cell)
 	pile.resource_kind = resource
+	pile.trade_id=trade_id
+	pile.trade_leg=trade_leg
 	pile.stored[resource] = amount
 	game.entities.add_child(pile)
 	piles.append(pile)
@@ -70,6 +80,9 @@ func claim(worker, only_destination = null) -> Dictionary:
 	if game.settlement.food_units() < game.workers.size() * game.DATA.FOOD_RESERVE_PER_PERSON:
 		var urgent := claim_piles(worker, true)
 		if not urgent.is_empty(): return urgent
+	if worker.kind=="carrier":
+		var trade: Dictionary=game.commerce.claim(worker)
+		if not trade.is_empty(): return trade
 	for destination in game.buildings + game.jobs + game.gardens:
 		if destination.needs_work(): append_material_requests(requests, destination)
 	var result := choose_request(worker, requests)
@@ -79,7 +92,28 @@ func claim(worker, only_destination = null) -> Dictionary:
 		if destination.completed and destination.kind == "workshop": append_workshop_requests(requests, destination)
 	result = choose_request(worker, requests)
 	if not result.is_empty(): return result
+	if worker.kind=="carrier":
+		var bars := claim_gold_output(worker)
+		if not bars.is_empty(): return bars
+		requests.clear()
+		for destination in game.buildings:
+			if destination.kind!="smelter" or not destination.completed or destination.demolition_requested: continue
+			for resource in ["gold_ore","wood"]:
+				var demand: int=destination.input_demand(resource)-incoming(destination,resource)
+				if demand>0: requests.append({"destination":destination,"resource":resource,"amount":demand,"material":false})
+		result=choose_request(worker,requests)
+		if not result.is_empty(): return result
 	return claim_piles(worker)
+
+func claim_gold_output(worker) -> Dictionary:
+	var best: Dictionary={}
+	for source in game.buildings:
+		if source.kind!="smelter" or not source.completed or source.demolition_requested: continue
+		for destination in game.buildings:
+			if destination.kind!="warehouse" or not destination.accepts("gold_bar"): continue
+			var candidate := proposal(worker,source,destination,"gold_bar",mini(available(source,"gold_bar"),storage_free(destination)),false)
+			if not candidate.is_empty() and (best.is_empty() or candidate.score<best.score): best=candidate
+	return commit_proposal(worker,best)
 
 func claim_piles(worker, only_food := false) -> Dictionary:
 	var best: Dictionary = {}
@@ -120,8 +154,9 @@ func choose_request(worker, requests: Array) -> Dictionary:
 			# Workshop ingredients are a production buffer, not an export warehouse.
 			# Otherwise two workshops continuously take each other's inputs.
 			if source.has_method("craft") and source.kind == "workshop" and request.resource in ["wood", "stone"]: continue
+			if source.has_method("craft") and source.kind=="smelter" and request.resource in ["wood","gold_ore"]: continue
 			var amount: int = mini(request.amount, available(source, request.resource))
-			if not request.material: amount = mini(amount, storage_free(request.destination))
+			if not request.material: amount = mini(amount, resource_space(request.destination,request.resource))
 			var candidate := proposal(worker, source, request.destination, request.resource, amount, request.material)
 			if not candidate.is_empty() and (request.destination.priority > best_priority or (request.destination.priority == best_priority and candidate.score < best_score)):
 				best_priority = request.destination.priority
@@ -161,7 +196,11 @@ func reserve(worker, source, destination, resource: String, amount: int, materia
 
 func pickup(ticket: Dictionary) -> int:
 	if not tickets.has(ticket) or ticket.picked or not is_instance_valid(ticket.source): return 0
+	if ticket.get("trade_id",0)>0: return game.commerce.pickup(ticket)
 	var amount: int = mini(ticket.amount, ticket.source.stored.get(ticket.resource, 0))
+	if ticket.get("clearance",false) and ticket.source is PILE:
+		ticket.worker.trade_id=ticket.source.trade_id
+		ticket.worker.trade_leg=ticket.source.trade_leg
 	ticket.source.stored[ticket.resource] -= amount
 	ticket.amount = amount
 	ticket.picked = true
@@ -169,6 +208,7 @@ func pickup(ticket: Dictionary) -> int:
 
 func deliver(ticket: Dictionary, amount: int) -> int:
 	if not tickets.has(ticket) or not ticket.picked or not is_instance_valid(ticket.destination): return 0
+	if ticket.get("trade_id",0)>0: return game.commerce.deliver(ticket,amount)
 	var accepted := 0
 	if ticket.material:
 		accepted = ticket.destination.materials.receive(ticket.resource, amount)

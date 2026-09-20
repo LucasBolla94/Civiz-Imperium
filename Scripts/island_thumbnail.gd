@@ -65,10 +65,18 @@ static func render(data: Dictionary) -> PackedByteArray:
 				stamp(canvas,post,point+Vector2i(Vector2(offset)*tile_pixels/16.0),Vector2i.ONE*tile_pixels)
 	var objects: Array = []
 	for b in data.buildings:
-		objects.append({"p":Vector2(b.origin*16),"t":DATA.building_texture(b.kind),"s":DATA.building_size(b.kind)*16})
+		var texture: Texture2D=DATA.building_texture(b.kind)
+		var art_size := Vector2i(texture.get_size()) if b.kind in ["gold_mining","smelter"] else DATA.building_size(b.kind)*16
+		var offset := Vector2i(-8,-32) if b.kind in ["gold_mining","smelter"] else Vector2i.ZERO
+		if b.kind=="trading_port":
+			texture=DATA.port_texture(b.get("orientation",0))
+			art_size=Vector2i(80,96)
+			offset=Vector2i(0,-16)
+		objects.append({"p":Vector2(b.origin*16+offset),"t":texture,"s":art_size})
 	for s in data.sources:
 		if s.get("removed",false): continue
 		var texture: Texture2D = DATA.CATALOG.entry("Tree-%d" % (s.stage+1) if s.is_tree else "Stone").texture
+		if s.get("resource_kind","")=="gold_ore": texture=DATA.gold_deposit_texture(s.remaining==0)
 		objects.append({"p":Vector2(s.origin*16),"t":texture,"s":Vector2i(texture.get_size())})
 	for p in data.piles:
 		objects.append({"p":Vector2(p.cell*16)+Vector2(0,-4),"t":DATA.resource_texture(p.resource,true),"s":Vector2i(16,16)})

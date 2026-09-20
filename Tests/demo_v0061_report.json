@@ -1,0 +1,108 @@
+{
+  "checks": 16,
+  "failures": [],
+  "final_order": {
+    "custody": 0,
+    "destinations": [
+      {
+        "building": 9,
+        "remaining": 0
+      }
+    ],
+    "id": 1,
+    "input_amount": 20,
+    "input_resource": "stone",
+    "origins": [
+      {
+        "building": 4,
+        "remaining": 0,
+        "return_space": 0
+      }
+    ],
+    "output_amount": 4,
+    "output_resource": "gold_bar",
+    "payment": 4,
+    "phase": "settled",
+    "port": 10,
+    "quantity": 20,
+    "reason": "",
+    "receipt": 0,
+    "resource": "stone",
+    "side": "sell",
+    "to_store": 0,
+    "visit": 1
+  },
+  "milestones": [
+    {
+      "population": 7,
+      "seconds": 0.0,
+      "stage": "start",
+      "stock": {
+        "axe": 5,
+        "gold_bar": 0,
+        "gold_ore": 0,
+        "pickaxe": 5,
+        "produce": 328,
+        "stone": 204,
+        "wood": 152
+      }
+    },
+    {
+      "population": 7,
+      "seconds": 256.5,
+      "stage": "gold_chain",
+      "stock": {
+        "axe": 5,
+        "gold_bar": 0,
+        "gold_ore": 0,
+        "pickaxe": 4,
+        "produce": 408,
+        "stone": 318,
+        "wood": 116
+      }
+    },
+    {
+      "population": 7,
+      "seconds": 549.0,
+      "stage": "five_bars",
+      "stock": {
+        "axe": 5,
+        "gold_bar": 7,
+        "gold_ore": 0,
+        "pickaxe": 4,
+        "produce": 426,
+        "stone": 318,
+        "wood": 104
+      }
+    },
+    {
+      "population": 7,
+      "seconds": 809.0,
+      "stage": "merchant",
+      "stock": {
+        "axe": 5,
+        "gold_bar": 2,
+        "gold_ore": 7,
+        "pickaxe": 4,
+        "produce": 530,
+        "stone": 278,
+        "wood": 53
+      }
+    },
+    {
+      "population": 7,
+      "seconds": 851.5,
+      "stage": "first_sale",
+      "stock": {
+        "axe": 5,
+        "gold_bar": 6,
+        "gold_ore": 7,
+        "pickaxe": 4,
+        "produce": 525,
+        "stone": 258,
+        "wood": 53
+      }
+    }
+  ],
+  "starting_save_sha256": "2d306cf967bab0f2dbf010d4fa6436628d81f242ecfc38a6f69351c019a6ee7b"
+}
