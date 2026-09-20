@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Civiz Imperium"
-config/version="0.0.5.1"
+config/version="0.0.6"
 run/main_scene="res://Scenes/main_menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
@@ -20,6 +20,9 @@ config/icon="res://icon.svg"
 
 Localization="*res://Scripts/localization.gd"
 WindowLayout="*res://Scripts/window_layout.gd"
+AppSettings="*res://Scripts/app_settings.gd"
+IslandSaves="*res://Scripts/island_saves.gd"
+Music="*res://Scripts/music.gd"
 
 [display]
 

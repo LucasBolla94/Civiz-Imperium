@@ -2,3 +2,81 @@
 [ext_resource type="Script" path="res://Scripts/main_menu.gd" id="1"]
 [node name="CivizImperium" type="Node2D"]
 script = ExtResource("1")
+[node name="Background" type="Node2D" parent="."]
+[node name="Interface" type="CanvasLayer" parent="."]
+[node name="Shade" type="ColorRect" parent="Interface"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.02,0.10,0.14,0.48)
+mouse_filter = 2
+[node name="Center" type="CenterContainer" parent="Interface"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+[node name="Home" type="PanelContainer" parent="Interface/Center"]
+custom_minimum_size = Vector2(440,0)
+layout_mode = 2
+[node name="Rows" type="VBoxContainer" parent="Interface/Center/Home"]
+layout_mode = 2
+theme_override_constants/separation = 18
+[node name="Title" type="Label" parent="Interface/Center/Home/Rows"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.57,0.27,0.16,1)
+theme_override_font_sizes/font_size = 38
+text = "CIVIZ\nIMPERIUM"
+horizontal_alignment = 1
+[node name="Subtitle" type="Label" parent="Interface/Center/Home/Rows"]
+layout_mode = 2
+text = "Uma ilha. O começo de um reino."
+horizontal_alignment = 1
+[node name="Buttons" type="VBoxContainer" parent="Interface/Center/Home/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 10
+[node name="Play" type="Button" parent="Interface/Center/Home/Rows/Buttons"]
+custom_minimum_size = Vector2(0,46)
+layout_mode = 2
+text = "Jogar"
+[node name="Online" type="Button" parent="Interface/Center/Home/Rows/Buttons"]
+custom_minimum_size = Vector2(0,46)
+layout_mode = 2
+focus_mode = 0
+disabled = true
+text = "Online — em breve"
+[node name="Settings" type="Button" parent="Interface/Center/Home/Rows/Buttons"]
+custom_minimum_size = Vector2(0,46)
+layout_mode = 2
+text = "Configurações"
+[node name="Exit" type="Button" parent="Interface/Center/Home/Rows/Buttons"]
+custom_minimum_size = Vector2(0,46)
+layout_mode = 2
+text = "Sair"
+[node name="Version" type="Label" parent="Interface/Center/Home/Rows"]
+layout_mode = 2
+text = "V0.0.6"
+horizontal_alignment = 1
+[node name="Islands" type="PanelContainer" parent="Interface/Center"]
+visible = false
+custom_minimum_size = Vector2(740,0)
+layout_mode = 2
+[node name="Rows" type="VBoxContainer" parent="Interface/Center/Islands"]
+layout_mode = 2
+theme_override_constants/separation = 12
+[node name="Heading" type="Label" parent="Interface/Center/Islands/Rows"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Suas ilhas"
+horizontal_alignment = 1
+[node name="Hint" type="Label" parent="Interface/Center/Islands/Rows"]
+layout_mode = 2
+text = "Cinco civilizações. Cada uma com sua própria história."
+horizontal_alignment = 1
+[node name="Slots" type="VBoxContainer" parent="Interface/Center/Islands/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 10
+[node name="Notice" type="Label" parent="Interface/Center/Islands/Rows"]
+layout_mode = 2
+autowrap_mode = 2
+[node name="Back" type="Button" parent="Interface/Center/Islands/Rows"]
+layout_mode = 2
+text = "Voltar"

@@ -464,6 +464,15 @@ func create_game_menu() -> void:
 	menu_save_button = button("Salvar jogo", save_from_game_menu)
 	menu_save_button.custom_minimum_size.y = 42
 	content.add_child(menu_save_button)
+	var settings_panel = preload("res://Scripts/settings_panel.gd").new()
+	game_menu.add_child(settings_panel)
+	content.add_child(button("Configurações",func(): settings_panel.popup_centered(Vector2i(480,460))))
+	content.add_child(button("Salvar e voltar ao menu",func():
+		if game.saves.save_file(): get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
+		else:
+			menu_save_status.text=game.get_node("/root/IslandSaves").error
+			get_node("/root/Localization").render(game_menu)
+	))
 	menu_quit_button = button("Fechar jogo", func(): get_tree().quit())
 	menu_quit_button.custom_minimum_size.y = 42
 	content.add_child(menu_quit_button)

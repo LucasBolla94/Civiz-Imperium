@@ -9,6 +9,9 @@ func run() -> void:
 	if DisplayServer.get_name() != "headless":
 		var usable := DisplayServer.screen_get_usable_rect(root.current_screen)
 		check(usable.encloses(Rect2i(root.position, root.size)), "Initial game window fits physical monitor")
+	var slots=root.get_node("IslandSaves")
+	slots.directory="user://ui-regression-"+slots.token()
+	slots.open_catalog()
 	var menu = load("res://Scenes/main_menu.tscn").instantiate()
 	root.add_child(menu)
 	current_scene = menu
@@ -18,6 +21,9 @@ func run() -> void:
 		contained(menu.start_button, "Start button")
 		contained(menu.start_button.get_parent().get_parent(), "Main menu")
 	await click(menu.start_button.get_global_rect().get_center(),3)
+	check(menu.slots_panel.visible,"Play opens island selector")
+	check(slots.begin_new(0,"UI regression"),"Reserve isolated UI island")
+	change_scene_to_file("res://Scenes/main.tscn")
 	await settle()
 	game = current_scene
 	game.simulation_paused = true

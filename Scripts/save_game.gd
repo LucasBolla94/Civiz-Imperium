@@ -40,7 +40,12 @@ func snapshot() -> Dictionary:
 	for pile in game.logistics.piles: data.piles.append({"cell": pile.cell, "resource": pile.resource_kind, "amount": pile.stored[pile.resource_kind]})
 	return data
 
-func save_file(path := PATH) -> bool:
+func save_file(path := "") -> bool:
+	if path.is_empty():
+		var slots = game.get_node("/root/IslandSaves")
+		var saved: bool = slots.save_active(snapshot())
+		game.notify("Partida salva." if saved else slots.error)
+		return saved
 	var payload := var_to_bytes(snapshot())
 	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	if file == null:
@@ -57,7 +62,16 @@ func save_file(path := PATH) -> bool:
 	game.notify("Partida salva.")
 	return true
 
-func load_file(path := PATH) -> bool:
+func load_file(path := "") -> bool:
+	if path.is_empty():
+		var slots = game.get_node("/root/IslandSaves")
+		var data: Dictionary = slots.load_active()
+		if data.is_empty():
+			game.notify(slots.error)
+			return false
+		restore(data)
+		game.notify("Partida restaurada. Os habitantes reorganizam suas tarefas.")
+		return true
 	if not FileAccess.file_exists(path):
 		game.notify("Nenhuma partida salva.")
 		return false
@@ -82,6 +96,32 @@ func valid(data) -> bool:
 	if not data is Dictionary or data.get("version") != 5: return false
 	for key in ["land", "buildings", "sources", "jobs", "workers", "piles", "gardens"]:
 		if not data.get(key) is Array: return false
+	for key in ["village_level", "planted_count", "expansion_count", "next_id"]:
+		if not data.get(key) is int: return false
+	for key in ["aid_cooldown"]:
+		if not (data.get(key) is float or data.get(key) is int): return false
+	if not data.get("total_delivered") is Dictionary: return false
+	if not data.get("objective_complete") is bool: return false
+	if data.land.is_empty() or data.land.size()>262144: return false
+	for tile in data.land:
+		if not tile is Array or tile.size()!=4 or not tile[0] is Vector2i or not tile[1] is int or not tile[2] is Vector2i or not tile[3] is int: return false
+	for collection in ["buildings","sources","jobs","workers","piles","gardens"]:
+		for item in data[collection]:
+			if not item is Dictionary: return false
+	for collection in ["buildings","jobs","gardens"]:
+		for item in data[collection]:
+			if not item.get("materials") is Dictionary: return false
+			for field in ["required","delivered"]:
+				if not item.materials.get(field) is Dictionary: return false
+	for item in data.sources:
+		if not item.get("origin") is Vector2i or not item.get("stage") is int or item.stage<0 or item.stage>6: return false
+		if not item.get("is_tree") is bool or not item.get("is_quarry") is bool: return false
+	for item in data.piles:
+		if not item.get("cell") is Vector2i or not preload("res://Scripts/game_data.gd").RESOURCES.has(item.get("resource")) or not item.get("amount") is int: return false
+	for key in ["policy","immigration","camera"]:
+		if not data.get(key) is Dictionary: return false
+	if not data.policy.get("orchards") is Array or not data.policy.get("stock_targets") is Dictionary: return false
+	if not data.camera.get("position") is Vector2 or not data.camera.get("zoom") is Vector2: return false
 	if data.buildings.is_empty() or data.buildings[0].get("kind") != "base": return false
 	for item in data.sources:
 		if not item is Dictionary: return false
@@ -90,7 +130,7 @@ func valid(data) -> bool:
 		if item.get("cut_started",false) and (not item.get("cut_requested",false) or item.get("stage") != 6): return false
 		if item.get("cut_requested",false) and (not item.get("is_tree",false) or item.get("stage") not in [4,6]): return false
 	for item in data.buildings:
-		if not game.DATA.BUILDINGS.has(item.get("kind", "")) or not item.get("origin") is Vector2i or not item.get("stored") is Dictionary: return false
+		if not preload("res://Scripts/game_data.gd").BUILDINGS.has(item.get("kind", "")) or not item.get("origin") is Vector2i or not item.get("stored") is Dictionary: return false
 		if item.get("kind") == "base" and item.get("demolition_requested", false): return false
 		if item.has("preparing_site") and (not item.preparing_site is bool or (item.preparing_site and item.get("completed",false))): return false
 	for item in data.jobs:
@@ -108,9 +148,11 @@ func valid(data) -> bool:
 		if item.get("phase") not in ["installing", "planting", "growing", "ripe", "empty"]: return false
 		if not item.get("materials") is Dictionary: return false
 		if not item.materials.get("required") is Dictionary or not item.materials.get("delivered") is Dictionary: return false
-		if item.get("remaining", -1) < 0 or item.remaining > game.DATA.GARDEN_YIELD: return false
+		if item.get("remaining", -1) < 0 or item.remaining > preload("res://Scripts/game_data.gd").GARDEN_YIELD: return false
 	for item in data.workers:
-		if not game.DATA.ACTIVITIES.has(item.get("assignment", "")) or not item.get("person") is Dictionary: return false
+		if not item.get("position") is Vector2 or not item.get("residence") is int: return false
+		if not preload("res://Scripts/game_data.gd").ACTIVITIES.has(item.get("assignment", "")) or not item.get("person") is Dictionary: return false
+		if not item.person.get("appearance_id") is int: return false
 		if item.get("home", -1) < 0 or item.home >= data.buildings.size(): return false
 		if item.has("clear_destination") and not item.clear_destination is Vector2i: return false
 		if item.has("clear_site_id") and not item.clear_site_id is int: return false
@@ -145,7 +187,7 @@ func restore(data: Dictionary) -> void:
 		if item.is_tree: source.setup_tree(game, item.origin, item.stage)
 		elif item.is_quarry: source.setup_quarry(game, item.origin, item.initial_reserve)
 		else:
-			var layer = game.DATA.CATALOG.resource_layer("Stone", item.origin)
+			var layer = preload("res://Scripts/game_data.gd").CATALOG.resource_layer("Stone", item.origin)
 			source.setup(game, layer, layer.get_used_cells(), "stone")
 			layer.free()
 		apply(source, item)

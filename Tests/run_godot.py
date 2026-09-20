@@ -3,6 +3,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 env=os.environ.copy()
 env['APPDATA']=str(root/'Tests/runtime')
+env['CIVIZ_SILENT_TEST']='1'
 godot = env.get('GODOT_BIN') or shutil.which('godot') or shutil.which('godot4')
 if not godot:
  candidate = Path.home()/'Desktop/Godot_v4.7.2-stable_win64.exe'

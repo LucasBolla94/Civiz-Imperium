@@ -155,7 +155,15 @@ func _ready() -> void:
 	center_camera.call_deferred()
 	if get_tree().has_meta("continue_game"):
 		get_tree().remove_meta("continue_game")
-		saves.load_file.call_deferred()
+		open_saved_island.call_deferred()
+	elif get_node("/root/IslandSaves").pending_index >= 0:
+		saves.save_file.call_deferred()
+
+func open_saved_island() -> void:
+	if not saves.load_file():
+		# A failed load must never allow autosave to overwrite that island with a fresh world.
+		simulation_paused = true
+		get_tree().change_scene_to_file("res://Scenes/main_menu.tscn")
 
 func connected_groups(input: Array[Vector2i]) -> Array:
 	var unvisited: Dictionary = {}

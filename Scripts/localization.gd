@@ -69,7 +69,9 @@ func render(node: Node) -> void:
 	if node is Control: properties.append("tooltip_text")
 	if node is Window: properties.append("title")
 	if node is AcceptDialog: properties.append("dialog_text")
+	if node.get_meta("l10n_skip",false): properties.clear()
 	for property in properties:
+		if property in node.get_meta("l10n_skip_properties",[]): continue
 		var current: String = node.get(property)
 		var key := "l10n_" + property
 		if not node.has_meta(key) or current != node.get_meta(key + "_shown", ""):
@@ -78,6 +80,9 @@ func render(node: Node) -> void:
 		node.set(property, shown)
 		node.set_meta(key + "_shown", shown)
 	for child in node.get_children(): render(child)
+	# Dialog action buttons are internal Godot children, outside get_children().
+	if node is AcceptDialog: render(node.get_ok_button())
+	if node is ConfirmationDialog: render(node.get_cancel_button())
 
 func choose(value: String) -> void:
 	if value not in ["en", "pt"]: return

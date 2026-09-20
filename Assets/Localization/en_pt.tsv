@@ -382,3 +382,50 @@ Aguardando espaço livre para desocupar a obra	Waiting for free space to leave t
 Saindo da área de construção	Leaving the construction site
 Levando materiais para um local livre	Moving materials to a free position
 Materiais soltos serão retirados; habitantes sairão antes da construção.	Loose materials will be moved; residents will leave before construction.
+Uma ilha. O começo de um reino.	One island. The beginning of a kingdom.
+Jogar	Play
+Voltar	Back
+Cancelar	Cancel
+Online — em breve	Online — coming soon
+Configurações	Settings
+Suas ilhas	Your islands
+Cinco civilizações. Cada uma com sua própria história.	Five civilizations. Each with its own story.
+Espaço livre	Empty slot
+Uma nova civilização	A new civilization
+Criar ilha	Create island
+Criar uma ilha	Create an island
+Criar e jogar	Create and play
+Nome da ilha	Island name
+Use um nome de 1 a 40 caracteres, sem barras ou quebras de linha.	Use 1 to 40 characters, without slashes or line breaks.
+%d habitantes · Base nível %d	%d residents · Base level %d
+Arquivo indisponível	Save unavailable
+Continuar	Continue
+Apagar ilha?	Delete island?
+Apagar definitivamente	Delete permanently
+Apagar a ilha %s? Todo o progresso será perdido.	Delete island %s? All progress will be lost.
+Apagar	Delete
+Ilha importada	Imported island
+Música	Music
+Efeitos sonoros	Sound effects
+Resolução	Resolution
+Resolução em janela	Window resolution
+Em tela cheia, usamos a resolução do monitor.	Fullscreen uses your monitor's resolution.
+Tela cheia	Fullscreen
+Aplicar vídeo	Apply video
+Idioma	Language
+Manter estas configurações?	Keep these settings?
+Manter	Keep
+Reverter	Revert
+Revertendo em %d segundos.	Reverting in %d seconds.
+Salvar e voltar ao menu	Save and return to menu
+Não foi possível salvar as configurações.	Could not save settings.
+Catálogo recuperado da cópia de segurança.	Island list recovered from backup.
+Não foi possível ler as ilhas. Seus arquivos foram preservados.	Could not read the islands. Your files have been preserved.
+Não foi possível ler esta ilha. Seus arquivos foram preservados.	Could not read this island. Your files have been preserved.
+Não foi possível apagar a ilha. Seus arquivos foram preservados.	Could not delete the island. Your files have been preserved.
+Não foi possível salvar a partida. O salvamento anterior foi preservado.	Could not save. The previous save has been preserved.
+Não foi possível verificar o salvamento. Seus arquivos foram preservados.	Could not verify the save. Your files have been preserved.
+O salvamento antigo não pôde ser importado. O original foi preservado.	The old save could not be imported. The original has been preserved.
+A importação precisa de um espaço livre. O salvamento antigo foi preservado.	Import needs an empty slot. The old save has been preserved.
+Os cinco espaços estão ocupados. Apague uma ilha para criar outra.	All five slots are occupied. Delete an island to create another.
+Escolha uma ilha no menu Jogar antes de salvar.	Choose an island in the Play menu before saving.

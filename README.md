@@ -10,59 +10,34 @@ Decisões não tomadas ficam explicitamente pendentes; não são autorização p
 
 O documento de assets permanece separado e recebe somente pedidos de arte a criar ou adaptar, com contexto completo para a outra IA. Não adicionar fichas de reutilização ou itens “sem arte nova”: essas decisões ficam no plano do jogo. Se não houver encomendas, manter apenas o cabeçalho do documento de assets. Manter versões anteriores como histórico e atualizar o estado de entrega nos dois documentos. Não criar um terceiro plano de versão para substituir ou fragmentar esse par.
 
-## V0.0.5.1 — Expansão fluida e administração clara
+## V0.0.6 — Cinco ilhas e uma trilha contínua
 
-Versão atual: **0.0.5.1**. Escopo fechado implementado: [PLANO_V0.0.5.1.md](PLANO_V0.0.5.1.md) e [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md). Revisão compartilhada **18**.
+Abra `Builds/Civiz-Imperium-V0.0.6/Civiz Imperium V0.0.6.exe` ou extraia o pacote Windows mantendo o `.pck` ao lado do executável. O pacote Projeto contém o código da mesma revisão. Para editar, abra `project.godot` no Godot 4.7.2.
 
-Novidades: hortas novas pelo depósito de comida nível 2; balões com motivos reais e atalhos; benefícios do próximo nível antes de melhorar; corte manual de árvores com frutas; expansão com Shift e arraste, incluindo sobreposição parcial a aterros já marcados. Custos, alocações de profissão, metas e automações existentes foram preservados.
+- **Jogar / Play** abre cinco ilhas independentes. Escolha um espaço livre e um nome de 1 a 40 caracteres. Cada ilha mostra sua imagem, habitantes e nível da base. **Continuar** e **Apagar** são ações separadas; excluir pede confirmação e libera apenas aquele espaço.
+- O salvamento antigo V0.0.5/V0.0.5.1 é importado uma única vez, quando há espaço. O original permanece intacto. Excluir a ilha importada não dispara outra importação.
+- **Configurações / Settings** controla Música, Efeitos sonoros, idioma, resolução em janela e tela cheia. A tela cheia usa a resolução nativa do monitor. Mudanças de vídeo têm 15 segundos reais para confirmação; cancelar ou esperar restaura tamanho, posição e modo anteriores. Preferências pertencem ao aplicativo.
+- Quatro faixas de ambiente existentes tocam uma vez por rodada embaralhada, sem repetir imediatamente na mudança de rodada. Um único reprodutor permanece ativo entre menu, partida e painéis. Nenhum efeito sonoro novo foi criado.
+- O menu usa uma ilha de apresentação com personagens e movimento discreto de câmera. Não executa a simulação nem altera partidas. Título, botões e fundo são nós separados em `Scenes/main_menu.tscn`; o editor permite mudar alinhamento, margens e espaçamento.
 
-**Construir na expansão:** espere o aterro terminar. A moradia precisa de 5×4 células livres e uma entrada frontal acessível; use o pincel para ampliar/preencher água. É possível marcar sobre materiais soltos e habitantes: antes da obra, um construtor, transportador ou habitante livre leva as pilhas para posições próximas livres escolhidas aleatoriamente, e os ocupantes saem andando. A etapa **Liberando terreno** preserva recursos, alocações e cargas, inclusive ao salvar ou cancelar. Árvores, jazidas e prédios continuam obstáculos fixos. A prévia mostra tamanho, obstáculos e entrada. Não há limite fixo de moradias.
+### Construção e controles preservados
 
-**Arrumar o terreno:** abra Vila → Ampliar costa e segure **Ctrl enquanto gira a roda do mouse** para ajustar o pincel de 1×1 a 9×9. Pode passar sobre terra existente: somente a água destacada será aterrada e cobrada. A prévia mostra materiais e tempo; **Shift + arraste** marca o percurso continuamente. Água já marcada é excluída de novos pedidos. Não cria expansões remotas dependentes de obras ainda pendentes. O construtor leva os materiais e conclui o aterro. Funciona também nos buracos de ilhas já salvas. Uma célula custa 2 pedras + 1 madeira; nove células custam 10 pedras + 5 madeiras. Reparos parciais e pincéis de outros tamanhos não criam jazidas automáticas.
+Casas concluídas com vagas permitem mais habitantes, sem o antigo limite de sete. É possível marcar construções e hortas sobre **materiais soltos e habitantes**: trabalhadores transportam os materiais para células livres e os moradores saem da área antes de começar. Árvores e jazidas continuam bloqueando a colocação.
 
-Jazidas descobertas por **Investigar terreno** agora exibem o asset Stone original, inclusive durante a abertura da pedreira. Investigações já salvas também recebem a correção.
+Q/E fazem zoom suave; WASD move; Home centraliza; Espaço pausa. Ctrl + roda ajusta o pincel de expansão de 1 a 9 células, com custo proporcional. Shift + arraste permite expansão contínua, incluindo o preenchimento de buracos. Esc fecha os painéis; com tudo fechado, abre o menu da partida, incluindo **Salvar e voltar ao menu**.
 
-Correção visual de 20/09/2026: Hortifruti redesenhado em 32×32/16×16 com transparência real; corrigida a textura que virava quadrado branco nas pilhas. Trabalhadores aparecem inteiros acima das hortas e podem atravessar todas as suas células. Compatível com saves V0.0.5 existentes; reinicie o jogo usando o pacote atualizado.
+Hortas 2×2 exigem depósito de comida nível 2, custam 10 madeiras e 10 segundos para instalar; plantio custa 2 Hortifruti e 4 segundos. Crescem em 60 segundos e rendem 15 unidades. Hortas antigas são preservadas. Personagens caminham por cima dos canteiros. Hortifruti mantém transparência e tamanho; jazidas mantêm o asset Stone. Balões de aviso ficam à esquerda do prédio.
 
-Para jogar no Windows, extraia `Builds/Civiz-Imperium-V0.0.5.1-Windows.zip` e abra `Civiz Imperium V0.0.5.1.exe`. Mantenha o `.pck` na mesma pasta. A pasta já extraída também está em `Builds/Civiz-Imperium-V0.0.5.1`. Para editar, abra `project.godot` no Godot 4.7.2 e pressione F5.
+### Salvamento e recuperação
 
-Você começa com um Rei e dois trabalhadores. **Casas concluídas com vagas permitem mais habitantes, sem o antigo limite de sete pessoas.** Mantenha reservas de comida e aguarde os barcos, ou abasteça uma expedição. Construção, Comida, Madeira, Pedra, Oficina e Transporte usam os mesmos habitantes, com profissões, experiência, ferramentas, fome, energia e descanso.
+Salvamento manual e automático, a cada dois minutos de simulação ativa, gravam somente na ilha ativa. O diretório `user://islands_v006` guarda revisões por identificador interno, independente do nome. Cada revisão inclui progresso, miniatura sem HUD e metadados do mesmo estado. O catálogo só publica uma gravação após leitura de verificação. Uma falha preserva a revisão anterior; um catálogo danificado pode ser recuperado da cópia de segurança.
 
-- Selecione um depósito de comida concluído de **nível 2** e use **Create garden / Criar horta**. Cada canteiro ocupa 2×2 células e aceita hortas adjacentes. Um construtor instala o cercado: 10 madeiras e 10 segundos de trabalho, uma vez. O trabalhador de Comida planta por 2 Hortifruti e 4 segundos; depois de 60 segundos de crescimento há 15 unidades para colher fisicamente. Selecione a horta para ligar replantio automático ou plantar manualmente um canteiro vazio.
-- Árvores crescem por 180 segundos e produzem exatamente 50 Hortifruti. Permanecem produtivas até esgotar a colheita. **Cut down now / Cortar agora** permite sacrificar manualmente uma árvore: o lenhador trabalha e transporta normalmente; as frutas restantes são perdidas na primeira machadada, sem alterar madeira ou tempos. Até começar, **Cancelar corte** preserva as frutas. A ordem e as cargas sobrevivem ao save/load; outras árvores mantêm seu ciclo. Sem envelhecimento automático da produção nem copa branca. Horta e árvore abastecem **Produce / Hortifruti**.
-- **Demolish / Demolir** solicita 10 segundos-base de trabalho a um construtor. Casas aguardam vagas e mudança física dos moradores antes de liberar a demolição. A base principal é protegida. Estoque do prédio removido fica em pilhas recuperáveis; materiais usados para construir não são reembolsados.
-- **Cancel construction / Cancelar obra** preserva materiais entregues no chão antes da primeira martelada; depois dela, esses materiais são perdidos. Reservas e cargas em trânsito são preservadas. A demolição só pode ser cancelada antes de começar. Melhorias em andamento precisam terminar antes de demolir.
-- A barra mostra somente **recursos disponíveis para gastar**. Passe o mouse em cada recurso para conferir disponível, armazenado, reservado e em transporte. Pilhas no chão e materiais entregues a obras não são dinheiro disponível.
-- Interface e mensagens em **English / Português**, selecionáveis no menu e durante a partida. Preferência salva separadamente; nomes próprios e estado da vila não mudam.
+O original `user://civilization_v005.save` não é modificado pela importação. Saves V0.0.4 continuam separados e não são convertidos. No Windows, `user://` corresponde a `%APPDATA%/Godot/app_userdata/Civiz Imperium`. Preferências de áudio/vídeo ficam em `settings_v006.cfg`; idioma em `language.cfg`.
 
-### Controles
+### Verificação e distribuição
 
-**Q/E têm zoom suave:** um toque aproxima/afasta gradualmente; segurar ajusta continuamente. Funciona durante a pausa, sem movimentar a câmera por trás de janelas ou campos de texto. A roda mantém seu comportamento e Ctrl + roda ajusta o pincel de expansão.
+As suítes V006 cobrem cinco ilhas, isolamento, nomes, imagens, exclusão, migração, corrupção, recuperação, áudio, menu e vídeo. Há capturas reais de tela em `Tests/v006_*.png` e registros de execução em `Tests/*.log`, ignorados no Git. Regressões de hortas, construção, expansão, balões e interface permanecem disponíveis.
 
-**Esc** fecha os painéis e cancela a seleção/colocação atual. Com tudo fechado, Esc abre **Salvar jogo / Fechar jogo / Continuar jogando**. A partida fica pausada enquanto o menu está aberto. Esc, X ou Continuar devolvem ao estado anterior de pausa. Salvar mostra a confirmação na janela; Fechar jogo encerra o aplicativo.
+`Tests/package_v006.py` gera os dois ZIPs a partir de um commit, testa o executável empacotado e verifica a integridade dos arquivos. O pacote Windows usa o binário local Godot 4.7.2 com os avisos de licença; inclui também o editor, por isso é maior que uma exportação release otimizada. Alterações locais não relacionadas ficam fora do pacote.
 
-WASD move a câmera; botão do meio arrasta. **E aproxima, Q afasta**, e a roda continua funcionando. **Shift + clique** mantém a colocação para repetir prédios, hortas e expansões. Cada clique válido cria um pedido; Esc ou botão direito cancela o modo. Home/Centrar retorna à vista inicial; Espaço pausa. Modais e campos de texto bloqueiam atalhos do mapa. A câmera permanece disponível durante a pausa.
-
-Habitantes abre a distribuição de trabalho. Vila abre expansão, evolução, expedição e planos. Salve em **Vila → Planos / salvar**; há salvamento automático a cada dois minutos de execução ativa. Continue pelo menu inicial.
-
-### Salvamento e compatibilidade
-
-Esta versão usa `user://civilization_v005.save`, com cópia `.bak`. Saves V0.0.4 permanecem em `civilization_v004.save` e não são convertidos: comece uma nova partida na V0.0.5. A V0.0.5.1 carrega partidas da V0.0.5; hortas já existentes continuam plantando, colhendo e replantando mesmo com depósito nível 1. O carregamento preserva estoques, cargas, materiais de obras, demolição, mudanças de residência, ciclos das hortas/árvores e ordens de corte. A preferência de idioma fica em `language.cfg`.
-
-### Arte e interface
-
-Sprites existentes de solo, cenoura/repolho, cercas, ferramentas, madeira e pedra foram reaproveitados por recortes 16×16, sem alterar as folhas originais. Novas composições de Hortifruti: ícone 32×32 e pilha 16×16 RGBA. Nearest, sem suavização; pivô das pilhas (8,12). Personagens preservam quadros 32×32, identidade visual, animações e coroa. O tronco bloqueia apenas sua célula; a copa reserva área de construção.
-
-Interface adaptável, rolagem em listas/painéis, referência de 1280×720 e janela ajustada à área útil do monitor. O pacote Windows inclui o binário local Godot 4.7.2 para executar o `.pck` sem instalação; por conter também o editor, é maior que uma exportação release otimizada. Avisos do motor estão junto ao pacote.
-
-### Validação
-
-Testes da V0.0.5.1: regras e migração (34), corte e limites (9), expansão em todas as bordas e coordenadas negativas (48), avisos e traduções (18), arraste com eventos reais em três zooms (73), cliques nos balões e corte (7). Regressões: V005 (68), bordas/hortas (19), UI V005 (72), pincel (43), construção na expansão (10), V004 (44), IA (31), interface adaptável (461). Capturas de conferência visual em `Tests/v0051_*.png` (não distribuídas no Git).
-
-O empacotador `Tests/package_v0051.py` gera o jogo e o projeto a partir do commit, testa o executável com horta, assets, corte, expansão, idioma e save/load e verifica a integridade dos arquivos ZIP.
-
-Para executar uma suíte: `godot --headless --path . --script res://Tests/test_v005.gd`. Para capturas reais, execute a suíte de UI sem `--headless`. Arquivos V001/V002 e planos anteriores são históricos.
-
-Famílias, comércio, dinheiro, outras ilhas, animais, pesca, refeições, água, sementes e estações permanecem fora desta versão.
-
-Propostas futuras da V0.0.6 permanecem separadas e não foram implementadas nesta entrega.
+Execução de testes: `python Tests/run_godot.py --headless --script Tests/test_v006.gd`. O lançador usa uma pasta de usuário isolada e silencia suas instâncias para não interferir no jogo aberto. Testes de UI e áudio ao vivo devem rodar sem `--headless`.

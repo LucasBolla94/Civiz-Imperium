@@ -9,4 +9,8 @@
 /Tests/*.save.tmp
 /Tests/runtime/
 /Tests/runtime-portable/
+/Tests/*.pcm
+/Tests/*.wav
+/Tests/*.wav.import
+/Tests/v006_audio_report.json
 /Builds/
