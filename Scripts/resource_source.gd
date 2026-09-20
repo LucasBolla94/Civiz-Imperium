@@ -6,13 +6,15 @@ var cells: Array[Vector2i] = []
 var terrain_visual: Node2D
 var selected := false
 var is_tree := false
+var is_timber := false
 var is_quarry := false
 var initial_reserve := 480
 var cut_requested := false
 var cut_started := false
 
 func request_cut() -> bool:
-	if not is_tree or removed or stage != 4 or cut_requested: return false
+	# A árvore de madeira já nasce destinada ao corte: não há fruta a sacrificar.
+	if not is_tree or is_timber or removed or stage != 4 or cut_requested: return false
 	cut_requested = true
 	# Release only uncollected food. Already collected cargo stays with its owner.
 	for worker in game.work_planner.claims.keys():
@@ -89,7 +91,29 @@ func setup_tree(controller, cell: Vector2i, initial_stage := 0) -> void:
 	add_child(tree_sprite)
 	set_stage(initial_stage)
 
+func setup_timber(controller, cell: Vector2i, initial_stage := 0) -> void:
+	is_timber = true
+	setup_tree(controller, cell, initial_stage)
+
+func set_timber_stage(value: int) -> void:
+	stage = clampi(value, 0, game.DATA.TIMBER_MATURE_STAGE)
+	age = 0
+	var mature: bool = stage == game.DATA.TIMBER_MATURE_STAGE
+	resource_kind = "wood" if mature else ""
+	remaining = game.DATA.TIMBER_STOCK if mature else 0
+	tree_sprite.texture = game.DATA.timber_texture(stage)
+	position = Vector2(origin * 16) + Vector2(24,56)
+	tree_sprite.position = Vector2(0, 8 - tree_sprite.texture.get_height() / 2.0)
+	queue_redraw()
+
+func growth_seconds(step: int) -> float:
+	var table: Array = game.DATA.TIMBER_SECONDS if is_timber else game.DATA.TREE_SECONDS
+	return table[step]
+
 func set_stage(value: int) -> void:
+	if is_timber:
+		set_timber_stage(value)
+		return
 	stage = 6 if value == 5 else value
 	age = 0
 	resource_kind = "produce" if stage == 4 else ("wood" if stage == 6 else "")
@@ -103,8 +127,8 @@ func set_stage(value: int) -> void:
 func _process(delta: float) -> void:
 	if not is_tree or removed or stage >= 4 or game.simulation_paused: return
 	age += delta * game.simulation_speed
-	while stage < 4 and age >= game.DATA.TREE_SECONDS[stage]:
-		var overflow: float = age - game.DATA.TREE_SECONDS[stage]
+	while stage < 4 and age >= growth_seconds(stage):
+		var overflow: float = age - growth_seconds(stage)
 		set_stage(stage + 1)
 		age = overflow if stage < 4 else 0.0
 	queue_redraw()
@@ -135,10 +159,10 @@ func take(amount: int, expected_kind := "") -> int:
 	if removed or (expected_kind != "" and game.DATA.resource_for_activity(expected_kind) != resource_kind): return 0
 	var harvested := mini(amount, remaining)
 	remaining -= harvested
-	if is_tree and stage == 4 and remaining == 0:
+	if is_tree and not is_timber and stage == 4 and remaining == 0:
 		set_stage(6)
 		return harvested
-	if remaining == 0 and (not is_tree or stage == 6):
+	if remaining == 0 and (not is_tree or stage == 6 or is_timber):
 		game.gold.mark(origin,"exhausted")
 		removed = resource_kind!="gold_ore"
 		if removed: terrain_visual.hide()
@@ -151,6 +175,13 @@ func description() -> String:
 	if resource_kind=="gold_ore": return "Jazida de ouro · %d minérios restantes · até dois postos de extração"%remaining if remaining>0 else "Jazida esgotada — libere o terreno para construir."
 	if removed: return "Recurso esgotado; espaço liberado."
 	if not is_tree: return ("Pedreira aberta: " if is_quarry else "Jazida: ") + "%d pedras restantes." % remaining
+	if is_timber:
+		var timber: String = "Árvore de madeira · " + game.DATA.TIMBER_NAMES[stage]
+		if stage < game.DATA.TIMBER_MATURE_STAGE:
+			timber += " · próximo estágio em %ds" % ceili(growth_seconds(stage) - age)
+			timber += " · nunca produz Hortifruti"
+		else: timber += " · %d madeiras · somente lenhadores" % remaining
+		return timber
 	var text: String = game.DATA.TREE_NAMES[stage]
 	if stage < 4: text += " · próximo estágio em %ds" % ceili(game.DATA.TREE_SECONDS[stage] - age)
 	if stage == 4:

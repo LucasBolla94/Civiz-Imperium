@@ -34,6 +34,7 @@ var activity_controls: Dictionary = {}
 var construction_menu: HFlowContainer
 var building_actions: HFlowContainer
 var plant_button: Button
+var timber_button: Button
 var expand_button: Button
 var evolve_button: Button
 var aid_button: Button
@@ -359,6 +360,8 @@ func _ready() -> void:
 	building_actions.add_child(recruit_button)
 	plant_button = button("Plantar árvore\n2 Hortifruti", func(): game.begin_action("plant"))
 	building_actions.add_child(plant_button)
+	timber_button = button("Plantar árvore de madeira\n2 Hortifruti", func(): game.begin_action("plant_wood"))
+	building_actions.add_child(timber_button)
 	garden_button = button("Criar horta · 10 madeiras", func(): game.begin_action("garden"))
 	building_actions.add_child(garden_button)
 	cut_button = button("Cortar agora",func():
@@ -677,7 +680,7 @@ func refresh() -> void:
 	garden_button.visible = is_building and selected.kind == "food" and selected.completed and not selected.demolition_requested
 	garden_button.disabled = not game.gardens_unlocked() or not game.can_afford(game.DATA.GARDEN_COST)
 	garden_button.tooltip_text = "Melhore um depósito de comida para o nível 2 para criar hortas." if not game.gardens_unlocked() else "Cercado: 10 madeiras uma vez. Plantio: 2 Hortifruti por ciclo. 60s; 15 Hortifruti."
-	var tree: bool = is_instance_valid(selected) and selected.has_method("request_cut") and selected.is_tree and not selected.removed
+	var tree: bool = is_instance_valid(selected) and selected.has_method("request_cut") and selected.is_tree and not selected.is_timber and not selected.removed
 	cut_button.visible = tree and (selected.stage == 4 or selected.cut_requested)
 	cut_button.disabled = tree and selected.cut_started
 	cut_button.text = "Cancelar corte" if tree and selected.cut_requested and not selected.cut_started else ("Corte iniciado" if tree and selected.cut_started else "Cortar agora")
@@ -707,6 +710,7 @@ func refresh() -> void:
 	recruit_button.disabled = game.immigration.expedition_reason() != ""
 	recruit_button.tooltip_text = game.immigration.expedition_reason()
 	plant_button.visible = is_base or (is_building and selected.completed and selected.kind == "food")
+	timber_button.visible = is_base or (is_building and selected.completed and selected.kind == "wood")
 	expand_button.visible = is_base
 	evolve_button.visible = is_base
 	aid_button.visible = is_base
@@ -729,7 +733,7 @@ func refresh() -> void:
 	var depleted_gold: bool=is_instance_valid(selected) and selected.has_method("take") and selected.get("resource_kind")=="gold_ore" and selected.remaining==0 and not selected.removed
 	release_button.visible = report or depleted_gold
 	if depleted_gold: building_actions.show()
-	orchard_button.visible = is_instance_valid(selected) and ((selected.has_method("description") and selected.is_tree) or (selected.has_method("open_quarry") and selected.kind == "plant"))
+	orchard_button.visible = is_instance_valid(selected) and ((selected.has_method("description") and selected.is_tree and not selected.is_timber) or (selected.has_method("open_quarry") and selected.kind == "plant"))
 	if orchard_button.visible: orchard_button.text = "Renovação do pomar: " + ("ligada" if game.automation.orchards.has(selected.origin) else "desligada")
 	priority_button.visible = is_instance_valid(selected) and selected.has_method("needs_work") and selected.needs_work()
 	if priority_button.visible: priority_button.text = "Prioridade: " + ["baixa", "normal", "urgente"][selected.priority]
@@ -742,6 +746,8 @@ func refresh() -> void:
 	if tools_box.visible:
 		for tool in tools_controls: tools_controls[tool].set_value_no_signal(selected.tool_targets[tool])
 	plant_button.disabled = not game.can_afford(game.DATA.PLANT_COST)
+	timber_button.disabled = not game.can_afford(game.DATA.PLANT_COST)
+	timber_button.tooltip_text = "Cresce em %ds sem nunca frutificar e rende %d madeiras. Exige depósito de madeira; lenhadores plantam e cortam." % [game.DATA.timber_growth_seconds(), game.DATA.TIMBER_STOCK]
 	expand_button.disabled = not game.can_afford(game.expansion_brush.cost(1))
 	expand_button.tooltip_text = "Ctrl + roda ajusta o pincel; o custo depende apenas da água preenchida."
 	evolve_button.disabled = not game.upgrade_ready()
@@ -751,7 +757,7 @@ func refresh() -> void:
 	aid_button.tooltip_text = "Disponível em %ds" % ceili(game.aid_cooldown)
 	progress.visible = false
 	if not game.action_mode.is_empty() or not game.placement_kind.is_empty():
-		title_label.text = "Criar horta" if game.action_mode == "garden" else ("Plantar árvore" if game.action_mode == "plant" else ("Ampliar a costa" if game.action_mode == "expand" else ("Investigar terreno" if game.action_mode == "survey" else "Construir " + game.DATA.BUILDINGS[game.placement_kind].name)))
+		title_label.text = "Criar horta" if game.action_mode == "garden" else ("Plantar árvore de madeira" if game.action_mode == "plant_wood" else ("Plantar árvore" if game.action_mode == "plant" else ("Ampliar a costa" if game.action_mode == "expand" else ("Investigar terreno" if game.action_mode == "survey" else "Construir " + game.DATA.BUILDINGS[game.placement_kind].name))))
 		detail_label.text = "Marque no mapa. Shift repete; Esc cancela. Materiais serão levados ao local." if game.preview_valid else game.placement_reason
 		if not game.placement_kind.is_empty():
 			var size: Vector2i = game.DATA.building_size(game.placement_kind)
@@ -804,14 +810,15 @@ func refresh() -> void:
 		progress.visible = true
 		progress.value = 100.0 * selected.age / game.DATA.GARDEN_GROW_SECONDS if selected.phase == "growing" else (100.0 * selected.remaining / game.DATA.GARDEN_YIELD if selected.phase == "ripe" else 100.0 * selected.progress / selected.work_duration())
 	elif is_instance_valid(selected) and selected.has_method("description"):
-		title_label.text = "Ciclo da árvore" if selected.is_tree else ("Jazida de ouro" if selected.resource_kind=="gold_ore" else "Jazida de pedra")
+		title_label.text = ("Ciclo da árvore de madeira" if selected.is_timber else "Ciclo da árvore") if selected.is_tree else ("Jazida de ouro" if selected.resource_kind=="gold_ore" else "Jazida de pedra")
 		detail_label.text = selected.description()
 		if selected.is_tree and not selected.removed:
 			progress.visible = true
-			progress.value = 100.0 * selected.age / game.DATA.TREE_SECONDS[selected.stage] if selected.stage < 4 else 100.0 * selected.remaining / (game.DATA.SOURCE_STOCK.produce if selected.stage == 4 else game.DATA.SOURCE_STOCK.wood)
+			var reserve: int = game.DATA.TIMBER_STOCK if selected.is_timber else (game.DATA.SOURCE_STOCK.produce if selected.stage == 4 else game.DATA.SOURCE_STOCK.wood)
+			progress.value = 100.0 * selected.age / selected.growth_seconds(selected.stage) if selected.stage < 4 else 100.0 * selected.remaining / reserve
 		progress.tooltip_text = "Evolução até o próximo estágio" if selected.stage < 4 else "Estoque restante para coleta"
 	elif is_instance_valid(selected) and selected.has_method("needs_work"):
-		title_label.text = {"plant": "Plantio", "expand": "Expansão costeira", "survey": "Investigação de jazida", "quarry": "Abertura de pedreira"}[selected.kind]
+		title_label.text = {"plant": "Plantio", "plant_wood": "Plantio de madeira", "expand": "Expansão costeira", "survey": "Investigação de jazida", "quarry": "Abertura de pedreira"}[selected.kind]
 		detail_label.text = ("Reserva: %d %s. Abrir consome materiais e trabalho." % [selected.deposit,game.DATA.RESOURCES[selected.deposit_resource].name]) if report else selected.materials.text(game.DATA)
 	elif is_instance_valid(selected) and selected.get("stored") != null:
 		title_label.text = "Materiais aguardando transporte"

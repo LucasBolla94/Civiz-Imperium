@@ -75,7 +75,7 @@ static func render(data: Dictionary) -> PackedByteArray:
 		objects.append({"p":Vector2(b.origin*16+offset),"t":texture,"s":art_size})
 	for s in data.sources:
 		if s.get("removed",false): continue
-		var texture: Texture2D = DATA.CATALOG.entry("Tree-%d" % (s.stage+1) if s.is_tree else "Stone").texture
+		var texture: Texture2D = DATA.timber_texture(s.stage) if s.get("is_timber",false) else DATA.CATALOG.entry("Tree-%d" % (s.stage+1) if s.is_tree else "Stone").texture
 		if s.get("resource_kind","")=="gold_ore": texture=DATA.gold_deposit_texture(s.remaining==0)
 		objects.append({"p":Vector2(s.origin*16),"t":texture,"s":Vector2i(texture.get_size())})
 	for p in data.piles:

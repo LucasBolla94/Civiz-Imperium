@@ -572,3 +572,18 @@ Ordem inconsistente cancelada ao carregar; bens preservados.	Inconsistent order 
 Todos os postos desta atividade estão lotados.	All workplaces for this activity are full.
 %d habitantes · %d livres · %d atribuídos\n%d ativos · %d indisponíveis · Moradia %d/%d	%d residents · %d unassigned · %d assigned\n%d active · %d unavailable · Housing %d/%d
 Área já investigada. Para construir no terreno liberado, escolha um prédio no menu Construir. Investigar novamente não renova a jazida.	This area has already been surveyed. To build on cleared land, choose a building from Build. Surveying again does not renew the deposit.
+Plantar árvore de madeira\n2 Hortifruti	Plant timber tree\n2 Produce
+Plantar árvore de madeira	Plant timber tree
+Marque um terreno livre para plantar a árvore de madeira.	Choose clear land to plant the timber tree.
+Construa um depósito de madeira.	Build a wood depot.
+Plantio de madeira marcado: aloque um lenhador.	Timber planting marked: assign a lumberjack.
+Muda de madeira plantada. Ela nunca frutifica: quando amadurecer, lenhadores cortam %d madeiras.	Timber sapling planted. It never bears fruit: once mature, lumberjacks cut %d wood.
+Cresce em %ds sem nunca frutificar e rende %d madeiras. Exige depósito de madeira; lenhadores plantam e cortam.	Grows in %ds without ever bearing fruit and yields %d wood. Requires a wood depot; lumberjacks plant and cut it.
+Plantio de madeira	Timber planting
+Árvore de madeira · 	Timber tree · 
+Semente plantada	Planted seed
+Muda de madeira	Timber sapling
+ · nunca produz Hortifruti	 · never produces Produce
+Ciclo da árvore de madeira	Timber tree cycle
+Indo plantar a árvore de madeira	Going to plant the timber tree
+Lenhadores cortam árvores esgotadas ou marcadas com Cortar agora, e plantam árvores de madeira.	Woodcutters cut exhausted trees or trees marked with Cut down now, and plant timber trees.

@@ -10,6 +10,12 @@ Decisões não tomadas ficam explicitamente pendentes; não são autorização p
 
 O documento de assets permanece separado e recebe somente pedidos de arte a criar ou adaptar, com contexto completo para a outra IA. Não adicionar fichas de reutilização ou itens “sem arte nova”: essas decisões ficam no plano do jogo. Se não houver encomendas, manter apenas o cabeçalho do documento de assets. Manter versões anteriores como histórico e atualizar o estado de entrega nos dois documentos. Não criar um terceiro plano de versão para substituir ou fragmentar esse par.
 
+## V0.0.6.2 — Árvore de madeira plantável
+
+Além do plantio frutífero, a Base e o **Depósito de madeira** oferecem **Plantar árvore de madeira** pelos mesmos 2 Hortifruti e a mesma área 3 × 4. O pedido é executado por **lenhadores**: eles levam a semente e plantam. A espécie cresce nos mesmos 180 segundos da frutífera, nunca produz Hortifruti e, madura, entrega **45 madeiras** direto aos lenhadores, sem precisar de **Cortar agora**. Cortada até o fim, some e libera o terreno.
+
+A árvore frutífera não muda: 50 Hortifruti, transição automática para 30 madeiras, **Cortar agora** com perda das frutas e renovação de pomar seguem iguais. O pedido exige um depósito de madeira concluído. Evidências em `Tests/test_v0062_timber.gd`; par de documentos em `PLANO_V0.0.6.2.md` e `ASSETS_V0.0.6.2.md`.
+
 ## V0.0.6.1 — Ouro, fundição e comércio
 
 Ouro e fundição são liberados na base 3. Melhore o depósito de pedra para o nível 2, investigue terreno livre e abra a jazida revelada. Aloque mineiros no posto de ouro, fundidores e transportadores em **Habitantes**. Cada barra consome cinco minérios e duas madeiras; transportadores levam os insumos e guardam as barras no depósito geral.

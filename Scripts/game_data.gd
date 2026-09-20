@@ -17,6 +17,16 @@ const GARDEN_YIELD = 15
 const DEMOLITION_SECONDS = 10.0
 const TREE_NAMES = ["Broto", "Muda", "Árvore jovem", "Árvore adulta", "Frutificação", "Envelhecendo", "Madeira: pronta para corte"]
 const PLANT_COST = {"produce": 2}
+## Árvore de madeira: espécie plantada que nunca frutifica. Cresce no mesmo tempo
+## total da frutífera e entrega mais madeira; o lenhador planta e corta.
+const TIMBER_SHEET = "res://Assets/Crops/Fruits Tree/Fall/Apple Tree.png"
+const TIMBER_FRAME_SIZE = Vector2(32, 48)
+# Quadros do sheet: semente, broto, muda, copa verde e copa madura (sem frutas).
+const TIMBER_FRAMES = [0, 1, 2, 4, 5]
+const TIMBER_SECONDS = [30.0, 40.0, 50.0, 60.0, 0.0]
+const TIMBER_STOCK = 45
+const TIMBER_NAMES = ["Semente plantada", "Broto", "Muda de madeira", "Árvore jovem", "Madeira: pronta para corte"]
+const TIMBER_MATURE_STAGE = 4
 const EXPAND_COST = {"stone": 10, "wood": 5}
 const CONSTRUCTIBLE = ["house", "food", "stone", "wood", "workshop", "warehouse", "gold_mining", "smelter", "trading_port"]
 const ACTIVITIES = {
@@ -39,7 +49,7 @@ const BUILDINGS = {
 	"warehouse": {"name": "Depósito geral", "short": "Depósito", "worker": "Transportador", "description": "Armazena até 200 unidades. Pode ser melhorado.", "cost": {"wood": 12, "stone": 10}, "build_seconds": 12.0, "color": Color("b78d68"), "example": "Building-1"},
 	"wood": {
 		"name": "Depósito de madeira", "short": "Madeira", "worker": "Lenhador",
-		"description": "Lenhadores cortam árvores esgotadas ou marcadas com Cortar agora.",
+		"description": "Lenhadores cortam árvores esgotadas ou marcadas com Cortar agora, e plantam árvores de madeira.",
 		"cost": {"stone": 15}, "build_seconds": 10.0,
 		"color": Color("bb8757"), "example": "Building-1",
 	},
@@ -127,6 +137,15 @@ const FOOD_RESERVE_PER_PERSON = 3
 const HOUSE_CAPACITY = 4
 const HOUSE_UPGRADE_COST = {"wood": 12, "stone": 8}
 const STORAGE_UPGRADE_COST = {"wood": 10, "stone": 10}
+
+static func timber_growth_seconds() -> int:
+	var total := 0.0
+	for seconds in TIMBER_SECONDS: total += seconds
+	return int(total)
+
+static func timber_texture(stage: int) -> Texture2D:
+	var frame: int = TIMBER_FRAMES[clampi(stage, 0, TIMBER_MATURE_STAGE)]
+	return atlas(TIMBER_SHEET, Rect2(Vector2(frame * TIMBER_FRAME_SIZE.x, 0), TIMBER_FRAME_SIZE))
 
 static func empty_stock() -> Dictionary:
 	var result := {}

@@ -391,7 +391,7 @@ func find_job() -> void:
 		if take_harvest():
 			status = "Buscando Hortifruti — reserva alimentar baixa"
 			return
-	if kind in ["builder", "food", "stone"]:
+	if kind in ["builder", "food", "stone", "wood"]:
 		var best = null
 		var best_route: PackedVector2Array = []
 		var shortest := INF
@@ -414,7 +414,7 @@ func find_job() -> void:
 			target = best
 			path = best_route
 			state = "to_build"
-			status = "Indo construir" if kind == "builder" else ("Investigando / abrindo pedreira" if kind == "stone" else "Indo plantar")
+			status = "Indo construir" if kind == "builder" else ("Investigando / abrindo pedreira" if kind == "stone" else ("Indo plantar a árvore de madeira" if kind == "wood" else "Indo plantar"))
 			return
 	if kind == "workshop":
 		home = assigned_home
@@ -436,7 +436,7 @@ func find_job() -> void:
 		status = "Aguardando materiais / trabalho" if kind != "idle" else "Livre — disponível para transporte"
 		return
 	# A gatherer helps supply its own planting, not unrelated village deliveries.
-	if kind in ["food", "stone"]:
+	if kind in ["food", "stone", "wood"]:
 		for job in game.jobs + game.gardens:
 			if job.activity == kind and job.needs_work() and not job.materials.ready():
 				if take_logistics(job): return

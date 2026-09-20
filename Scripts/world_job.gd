@@ -27,6 +27,8 @@ func setup_expansion(controller, cell: Vector2i, size: int, plan: Dictionary) ->
 	duration = plan.seconds
 	discovery_eligible = plan.discovery
 func reserves_ground() -> bool: return not completed or (kind == "survey" and not released)
+## Os dois plantios compartilham área 3 × 4, custo e tempo; muda a espécie e o executor.
+func planting() -> bool: return kind in ["plant", "plant_wood"]
 func open_quarry() -> bool:
 	if kind != "survey" or not completed or released: return false
 	kind = "quarry"
@@ -61,14 +63,14 @@ func cancel_survey() -> bool:
 func setup(controller, type: String, cell: Vector2i, entry: Vector2i) -> void:
 	game = controller
 	kind = type
-	materials.required = (game.DATA.PLANT_COST if kind == "plant" else game.DATA.EXPAND_COST).duplicate()
-	activity = "food" if kind == "plant" else ("stone" if kind in ["survey", "quarry"] else "builder")
+	materials.required = (game.DATA.PLANT_COST if planting() else game.DATA.EXPAND_COST).duplicate()
+	activity = "food" if kind == "plant" else ("wood" if kind == "plant_wood" else ("stone" if kind in ["survey", "quarry"] else "builder"))
 	if kind == "survey": materials.required = {}
 	origin = cell
 	entry_cell = entry
-	duration = 4 if kind == "plant" else (12 if kind == "survey" else 10)
+	duration = 4 if planting() else (12 if kind == "survey" else 10)
 	deposit = [300, 600, 1000][posmod(cell.x * 73 + cell.y * 137, 3)]
-	for y in range(4 if kind == "plant" else 3):
+	for y in range(4 if planting() else 3):
 		for x in range(3): cells.append(cell + Vector2i(x,y))
 	position = Vector2(origin * 16)
 func door() -> Vector2i: return entry_cell
@@ -92,8 +94,8 @@ func _draw() -> void:
 		# Progress stays on a water cell even when the brush origin lies on land.
 		if not cells.is_empty(): draw_rect(Rect2(Vector2((cells[0]-origin)*16)+Vector2(1,12),Vector2(14*progress/duration,2)),Color("e8be78"))
 		return
-	var size := Vector2(48,64 if kind == "plant" else 48)
-	var color := Color("a6d887") if kind == "plant" else Color("e8be78")
+	var size := Vector2(48,64 if planting() else 48)
+	var color := Color("a6d887") if kind == "plant" else (Color("bb8757") if kind == "plant_wood" else Color("e8be78"))
 	draw_rect(Rect2(Vector2.ZERO,size), Color(color,0.25))
 	draw_rect(Rect2(Vector2.ZERO,size), color, false,1)
 	# A surveyed deposit is visible before excavation, using the existing native art.

@@ -26,7 +26,7 @@ func snapshot() -> Dictionary:
 		if building.kind=="trading_port": item.orientation=building.orientation
 		for batch in item.smelting_batches: batch.worker=0
 		data.buildings.append(item)
-	for source in game.sources: data.sources.append(fields(source, ["is_tree", "is_quarry", "resource_kind", "origin", "stage", "age", "remaining", "removed", "initial_reserve", "cut_requested", "cut_started"]))
+	for source in game.sources: data.sources.append(fields(source, ["is_tree", "is_timber", "is_quarry", "resource_kind", "origin", "stage", "age", "remaining", "removed", "initial_reserve", "cut_requested", "cut_started"]))
 	for job in game.jobs:
 		var item := fields(job, ["kind", "origin", "entry_cell", "activity", "completed", "progress", "duration", "priority", "deposit", "released"])
 		item.deposit_resource=job.deposit_resource
@@ -140,10 +140,11 @@ func valid(data) -> bool:
 		if not data.buildings.any(func(b): return b.get("kind")=="trading_port" and b.get("entity_id")==data.merchant.port_id and b.get("completed",false)): return false
 	for item in data.sources:
 		if not item is Dictionary: return false
-		for field in ["cut_requested","cut_started"]:
+		for field in ["cut_requested","cut_started","is_timber"]:
 			if item.has(field) and not item[field] is bool: return false
 		if item.get("cut_started",false) and (not item.get("cut_requested",false) or item.get("stage") != 6): return false
 		if item.get("cut_requested",false) and (not item.get("is_tree",false) or item.get("stage") not in [4,6]): return false
+		if item.get("is_timber",false) and (not item.get("is_tree",false) or item.get("cut_requested",false) or item.get("stage") > preload("res://Scripts/game_data.gd").TIMBER_MATURE_STAGE): return false
 	for item in data.buildings:
 		if not preload("res://Scripts/game_data.gd").BUILDINGS.has(item.get("kind", "")) or not item.get("origin") is Vector2i or not item.get("stored") is Dictionary: return false
 		if item.get("kind")=="trading_port":
@@ -235,7 +236,8 @@ func restore(data: Dictionary) -> void:
 	for item in data.sources:
 		var source = game.SOURCE.new()
 		game.entities.add_child(source)
-		if item.is_tree: source.setup_tree(game, item.origin, item.stage)
+		if item.get("is_timber",false): source.setup_timber(game, item.origin, item.stage)
+		elif item.is_tree: source.setup_tree(game, item.origin, item.stage)
 		elif item.is_quarry: source.setup_quarry(game, item.origin, item.initial_reserve)
 		else:
 			var layer = preload("res://Scripts/game_data.gd").CATALOG.resource_layer("Stone", item.origin)

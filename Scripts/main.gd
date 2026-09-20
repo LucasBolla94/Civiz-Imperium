@@ -199,6 +199,13 @@ func connected_groups(input: Array[Vector2i]) -> Array:
 		groups.append(group)
 	return groups
 
+func spawn_timber_tree(cell: Vector2i, stage := 0):
+	var tree = SOURCE.new()
+	entities.add_child(tree)
+	tree.setup_timber(self, cell, stage)
+	sources.append(tree)
+	return tree
+
 func spawn_tree(cell: Vector2i, stage := 0):
 	var tree = SOURCE.new()
 	entities.add_child(tree)
@@ -318,15 +325,15 @@ func begin_action(mode: String) -> void:
 		preview_check_time = 0
 		notify("Marque uma horta 2 × 2. Cercado: 10 madeiras; plantio: 2 Hortifruti.")
 		return
-	if mode not in ["plant", "expand", "survey"]: return
-	var cost: Dictionary = DATA.PLANT_COST if mode == "plant" else ({} if mode == "survey" else DATA.EXPAND_COST)
+	if mode not in ["plant", "plant_wood", "expand", "survey"]: return
+	var cost: Dictionary = DATA.PLANT_COST if mode in ["plant","plant_wood"] else ({} if mode == "survey" else DATA.EXPAND_COST)
 	if not can_afford(cost):
 		notify(cost_status(cost))
 		return
 	placement_kind = ""
 	action_mode = mode
 	preview_check_time = 0
-	notify("Marque um terreno livre para plantar." if mode == "plant" else ("Marque terra livre 3 × 3 para investigar." if mode == "survey" else "Marque um bloco de mar 3 × 3 junto à costa."))
+	notify("Marque um terreno livre para plantar a árvore de madeira." if mode == "plant_wood" else ("Marque um terreno livre para plantar." if mode == "plant" else ("Marque terra livre 3 × 3 para investigar." if mode == "survey" else "Marque um bloco de mar 3 × 3 junto à costa.")))
 
 func job_entry(cell: Vector2i, height: int) -> Vector2i:
 	for y in range(height):
@@ -351,14 +358,17 @@ func can_place_job(mode: String, cell: Vector2i) -> bool:
 	if mode == "survey" and not buildings.any(func(b): return b.kind == "stone" and b.completed and b.level >= 2):
 		placement_reason = "Melhore um depósito de pedra para o nível 2."
 		return false
-	var cost: Dictionary = DATA.PLANT_COST if mode == "plant" else ({} if mode == "survey" else DATA.EXPAND_COST)
+	var cost: Dictionary = DATA.PLANT_COST if mode in ["plant","plant_wood"] else ({} if mode == "survey" else DATA.EXPAND_COST)
 	if not can_afford(cost):
 		placement_reason = cost_status(cost)
 		return false
 	if mode == "plant" and not is_instance_valid(workplace_for("food")):
 		placement_reason = "Construa um depósito de comida."
 		return false
-	var height := 4 if mode == "plant" else 3
+	if mode == "plant_wood" and not buildings.any(func(b): return b.kind == "wood" and b.completed and not b.demolition_requested):
+		placement_reason = "Construa um depósito de madeira."
+		return false
+	var height := 4 if mode in ["plant","plant_wood"] else 3
 	var rect := Rect2i(cell,Vector2i(3,height))
 	if not $Water/Water.get_used_rect().encloses(rect):
 		placement_reason = "Limite da região desta versão."
@@ -428,13 +438,13 @@ func place_job(mode: String, cell: Vector2i, automatic := false, repeat := false
 		return garden
 	var job = JOB.new()
 	if mode == "expand": job.setup_expansion(self,cell,expansion_brush_size,expansion_preview)
-	else: job.setup(self,mode,cell,job_entry(cell,4 if mode == "plant" else 3))
+	else: job.setup(self,mode,cell,job_entry(cell,4 if mode in ["plant","plant_wood"] else 3))
 	if mode=="survey": gold.register_survey(job)
 	entities.add_child(job)
 	jobs.append(job)
 	rebuild_navigation()
 	if not automatic and not repeat: cancel_placement()
-	notify("Plantio marcado: aloque um trabalhador em Comida." if mode == "plant" else ("Investigação marcada: aloque um mineiro." if mode == "survey" else "Aterro marcado: aloque um construtor."))
+	notify("Plantio marcado: aloque um trabalhador em Comida." if mode == "plant" else ("Plantio de madeira marcado: aloque um lenhador." if mode == "plant_wood" else ("Investigação marcada: aloque um mineiro." if mode == "survey" else "Aterro marcado: aloque um construtor.")))
 	return job
 
 func complete_job(job) -> void:
@@ -451,7 +461,11 @@ func complete_job(job) -> void:
 		rebuild_navigation()
 		notify("Jazida de ouro aberta. Aloque mineiros no posto de mineração." if job.deposit_resource=="gold_ore" else "Pedreira aberta. Mineiros extraem e transportam a pedra.")
 		return
-	if job.kind == "plant":
+	if job.kind == "plant_wood":
+		spawn_timber_tree(job.origin)
+		planted_count += 1
+		notify("Muda de madeira plantada. Ela nunca frutifica: quando amadurecer, lenhadores cortam %d madeiras." % DATA.TIMBER_STOCK)
+	elif job.kind == "plant":
 		spawn_tree(job.origin)
 		planted_count += 1
 		notify("Muda plantada. Acompanhe os estágios clicando na árvore.")
@@ -1068,7 +1082,7 @@ func draw_placement() -> void:
 					placement_overlay.draw_rect(rect,color,false,0.5)
 				placement_overlay.draw_rect(Rect2(Vector2(preview_cell*16),Vector2.ONE*expansion_brush_size*16),color,false,1)
 				return
-			placement_overlay.draw_rect(Rect2(Vector2(preview_cell * 16), Vector2(32,32) if action_mode == "garden" else Vector2(48,64 if action_mode == "plant" else 48)), Color(color,0.4))
+			placement_overlay.draw_rect(Rect2(Vector2(preview_cell * 16), Vector2(32,32) if action_mode == "garden" else Vector2(48,64 if action_mode in ["plant","plant_wood"] else 48)), Color(color,0.4))
 		return
 	if placement_kind.is_empty() or hud.blocks_world_input(pointer_position):
 		return
