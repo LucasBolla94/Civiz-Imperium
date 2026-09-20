@@ -360,7 +360,7 @@ Próximo nível: armazenamento %d → %d.	Next level: storage capacity %d → %d
  Libera reposição por metas.	 Unlocks restocking to targets.
  Reserva automática: 1 ferramenta a cada 2 trabalhadores da profissão, arredondando para cima.	 Automatic reserve: 1 tool per 2 workers in the profession, rounded up.
 Ver impedimento	Inspect issue
-Abrir Habitantes	Open Inhabitants
+Abrir Habitantes	Open Residents
 Ver ferramentas	View tools
 Ver metas	View targets
 Ver armazenamento / obra	View storage / construction
@@ -530,6 +530,7 @@ Levar material ao galpão	Move goods to warehouse
 Pedidos e entregas	Orders and deliveries
 Cancelar negócio	Cancel trade
 Comprar %d unidades por %d barras	Buy %d units for %d gold bars
+%d barras	%d gold bars
 Vender %d unidades por %d barras	Sell %d units for %d gold bars
 Orçamento do comerciante: %d barras · Recebimento: %d/200 unidades	Merchant budget: %d gold bars · Receiving: %d/200 units
 Vende %d · Compra %d	Sells %d · Buys %d

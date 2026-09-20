@@ -63,6 +63,7 @@ func run() -> void:
 	window.new_form()
 	await settle()
 	check(window.confirm_button.text=="Confirm trade" and "Sell 20 units" in window.price_label.text,"Commercial controls and quantity are translated")
+	check("gold bars" in window.rows[1].label.text and not "barras" in window.rows[1].label.text,"Order history also translates the payment unit")
 	await capture("v0061_trade_en")
 	game.workers[1].assign_to("idle",game.base)
 	window.refresh()
