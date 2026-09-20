@@ -12,7 +12,7 @@ O documento de assets permanece separado e recebe somente pedidos de arte a cria
 
 ## V0.0.5.1 — Expansão fluida e administração clara
 
-Versão atual: **0.0.5.1**. Escopo fechado implementado: [PLANO_V0.0.5.1.md](PLANO_V0.0.5.1.md) e [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md). Revisão compartilhada **16**.
+Versão atual: **0.0.5.1**. Escopo fechado implementado: [PLANO_V0.0.5.1.md](PLANO_V0.0.5.1.md) e [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md). Revisão compartilhada **17**.
 
 Novidades: hortas novas pelo depósito de comida nível 2; balões com motivos reais e atalhos; benefícios do próximo nível antes de melhorar; corte manual de árvores com frutas; expansão com Shift e arraste, incluindo sobreposição parcial a aterros já marcados. Custos, alocações de profissão, metas e automações existentes foram preservados.
 

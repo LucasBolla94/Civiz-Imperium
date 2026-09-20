@@ -86,7 +86,7 @@ func setup(controller, building_kind: String, cell: Vector2i, ready_now := false
 	bubble.atlas = FEEDBACK.BUBBLES
 	bubble.region = Rect2(0,112,16,16)
 	warning_sprite.texture = bubble
-	warning_sprite.position = Vector2(grid_size.x*8,-grid_size.y*16-8)
+	warning_sprite.position = Vector2(-grid_size.x*8,-grid_size.y*16-8)
 	warning_sprite.z_index = 20
 	warning_sprite.hide()
 	add_child(warning_sprite)

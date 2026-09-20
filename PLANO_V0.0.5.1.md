@@ -1,7 +1,7 @@
 # Civiz Imperium — Plano V0.0.5.1
 
 - Versão alvo: **0.0.5.1**, escolhida pelo usuário para este pacote.
-- Revisão compartilhada: **16**.
+- Revisão compartilhada: **17**.
 - Par: [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md).
 - Base: V0.0.5 entregue.
 - Estado: **escopo fechado implementado e validado; propostas exploratórias permanecem fora da versão**.
@@ -30,7 +30,7 @@ O arraste foi exercitado com eventos reais, devagar e em um salto rápido, retor
 
 ### Apresentação e compatibilidade
 
-Balões reutilizam o quadro de 16×16 em (0,112) da folha `Assets/UI/speech bubble, emojis, reaction.png`, inspecionada visualmente, sem redimensionar os sprites dos prédios. Sem encomenda de arte nova. Cópia de save real foi usada nos testes de construção sem escrever no save original. Partidas continuam em `civilization_v005.save`, com campos opcionais de corte e validação, mantendo o formato compatível para leitura da V005.
+Balões reutilizam o quadro de 16×16 em (0,112) da folha `Assets/UI/speech bubble, emojis, reaction.png`, inspecionada visualmente, sem redimensionar os sprites dos prédios. Na revisão 17, o balão fica no canto superior esquerdo do prédio, mantendo a orientação original da ponta e a área de clique acompanhando o sprite. Sem encomenda de arte nova. Cópia de save real foi usada nos testes de construção sem escrever no save original. Partidas continuam em `civilization_v005.save`, com campos opcionais de corte e validação, mantendo o formato compatível para leitura da V005.
 
 Validação: regras/migração 34; corte/limites 9; expansão 48; feedback/tradução 18; arraste 73; cliques de feedback 7; regressões V005 68, UI 72, hortas/bordas 19, pincel 43, construção na expansão 10, V004 44, IA 31 e interface adaptável 461. Capturas PT/EN conferidas. O empacotador `Tests/package_v0051.py` exige teste do executável exportado e integridade dos ZIPs antes de entregar os arquivos Windows e projeto.
 
@@ -260,3 +260,4 @@ Esta sequência não é autorização de execução. Não alterar o jogo durante
 | 15 | Acrescentado objetivo de expansão fluida e fácil: prévia estável, feedback claro, arraste contínuo e validação prática da experiência. |
 
 | 16 | Implementado o escopo fechado 01–07; registrados diagnóstico, compatibilidade, testes, tradução, reutilização de balão e empacotamento reproduzível. |
+| 17 | Balão de aviso reposicionado à esquerda do prédio conforme solicitado; mantidos o asset e o clique contextual. |
