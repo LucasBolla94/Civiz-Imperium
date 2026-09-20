@@ -15,7 +15,7 @@ tag=Path(args[args.index('--script')+1]).stem if '--script' in args else 'v005_r
 log=root/'Tests'/f'{tag}.log'
 with log.open('w',encoding='utf-8') as stream:
  result=subprocess.Popen([godot,'--path',str(root),*args],env=env,stdout=stream,stderr=stream)
- try: result.wait(timeout=120)
+ try: result.wait(timeout=int(env.get('CIVIZ_TEST_TIMEOUT','120')))
  except subprocess.TimeoutExpired:
   result.kill();result.wait()
 output=log.read_text(encoding='utf-8',errors='replace')

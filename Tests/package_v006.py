@@ -7,9 +7,11 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 version = '0.0.6'
-build = root / f'Builds/Civiz-Imperium-V{version}'
+suffix = os.environ.get('CIVIZ_PACKAGE_SUFFIX', '')
+assert suffix in ('', '-Audio'), 'Unsupported package suffix'
+build = root / f'Builds/Civiz-Imperium-V{version}{suffix}'
 build.mkdir(parents=True, exist_ok=True)
-project_zip = root / f'Builds/Civiz-Imperium-V{version}-Projeto.zip'
+project_zip = root / f'Builds/Civiz-Imperium-V{version}{suffix}-Projeto.zip'
 subprocess.run(['git', 'archive', '--format=zip', '--prefix=civyz/', '-o', str(project_zip), 'HEAD'], cwd=root, check=True)
 revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
 # A fresh directory prevents stale imports and unrelated files entering a release.
@@ -45,7 +47,9 @@ pck = build / f'Civiz Imperium V{version}.pck'
 run([godot, '--headless', '--path', str(snapshot), '--export-pack', f'Windows V{version}', str(pck)], snapshot, 'export')
 exe = build / f'Civiz Imperium V{version}.exe'
 shutil.copy2(godot, exe)
-for name in ['README.md', 'VALIDACAO_V0.0.6.md', 'GODOT-LICENSE.txt', f'PLANO_V{version}.md', f'ASSETS_V{version}.md']:
+documents = ['README.md', 'VALIDACAO_V0.0.6.md', 'GODOT-LICENSE.txt', f'PLANO_V{version}.md', f'ASSETS_V{version}.md']
+if suffix == '-Audio': documents.append('VALIDACAO_AUDIO.md')
+for name in documents:
     shutil.copy2(snapshot / name, build / name)
 (build / 'LEIA-ME.txt').write_text(
     f'Civiz Imperium V{version}\n\n'
@@ -62,9 +66,9 @@ for name in ['README.md', 'VALIDACAO_V0.0.6.md', 'GODOT-LICENSE.txt', f'PLANO_V{
     f'Código da versão: {revision}\n', encoding='utf-8')
 output = run([str(exe), '--script', str(snapshot / 'Tests/test_v006_portable.gd')], build, 'portable', 60)
 assert 'passed' in output, output
-windows_zip = root / f'Builds/Civiz-Imperium-V{version}-Windows.zip'
+windows_zip = root / f'Builds/Civiz-Imperium-V{version}{suffix}-Windows.zip'
 with zipfile.ZipFile(windows_zip, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
-    for name in [exe.name, pck.name, 'LEIA-ME.txt', 'README.md', 'VALIDACAO_V0.0.6.md', 'GODOT-LICENSE.txt', f'PLANO_V{version}.md', f'ASSETS_V{version}.md']:
+    for name in [exe.name, pck.name, 'LEIA-ME.txt', *documents]:
         archive.write(build / name, Path(build.name) / name)
 for path in [windows_zip, project_zip]:
     with zipfile.ZipFile(path) as archive:

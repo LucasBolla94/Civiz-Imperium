@@ -19,11 +19,21 @@ func run() -> void:
 	var last_log := 0
 	var captured := 0
 	var audible := 0
+	var pause_tested := false
+	var stop_tested := false
 	while Time.get_ticks_msec()-started<170000:
 		await process_frame
 		var elapsed := Time.get_ticks_msec()-started
+		if elapsed>30000 and not pause_tested:
+			paused=true
+			pause_tested=true
+		if elapsed>45000: paused=false
+		if elapsed>90000 and not stop_tested:
+			music.player.stop()
+			stop_tested=true
+			await process_frame
 		var playback=music.player.get_stream_playback()
-		var clip: int=playback.get_current_clip_index()
+		var clip: int=playback.get_current_clip_index() if playback else -1
 		if clip!=last:
 			changes.append(clip)
 			print("LIVE ",elapsed,"ms clip=",clip," playing=",music.player.playing," queued=",music.queued)
@@ -40,6 +50,7 @@ func run() -> void:
 				longest_silence=maxi(longest_silence,silent_frames)
 	print("LIVE final changes ",changes," max silence ",float(longest_silence)/AudioServer.get_mix_rate(),"s")
 	assert(changes.size()>=5 and not changes.has(-1))
+	assert(music.recovery_count==1,"The injected interruption must recover once")
 	assert(captured>AudioServer.get_mix_rate()*160 and audible>captured*0.99)
 	assert(longest_silence<AudioServer.get_mix_rate()/10)
 	print("V0.0.6 live music passed")
