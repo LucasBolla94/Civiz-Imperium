@@ -12,11 +12,11 @@ O documento de assets permanece separado e recebe somente pedidos de arte a cria
 
 ## V0.0.5.1 — Expansão fluida e administração clara
 
-Versão atual: **0.0.5.1**. Escopo fechado implementado: [PLANO_V0.0.5.1.md](PLANO_V0.0.5.1.md) e [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md). Revisão compartilhada **17**.
+Versão atual: **0.0.5.1**. Escopo fechado implementado: [PLANO_V0.0.5.1.md](PLANO_V0.0.5.1.md) e [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md). Revisão compartilhada **18**.
 
 Novidades: hortas novas pelo depósito de comida nível 2; balões com motivos reais e atalhos; benefícios do próximo nível antes de melhorar; corte manual de árvores com frutas; expansão com Shift e arraste, incluindo sobreposição parcial a aterros já marcados. Custos, alocações de profissão, metas e automações existentes foram preservados.
 
-**Construir na expansão:** espere o aterro terminar. A moradia precisa de 5×4 células livres e uma entrada frontal acessível; use o pincel para ampliar/preencher água e transporte materiais soltos que ocupem o local. A prévia mostra tamanho, obstáculos e entrada. Não há limite fixo de moradias.
+**Construir na expansão:** espere o aterro terminar. A moradia precisa de 5×4 células livres e uma entrada frontal acessível; use o pincel para ampliar/preencher água. É possível marcar sobre materiais soltos e habitantes: antes da obra, um construtor, transportador ou habitante livre leva as pilhas para posições próximas livres escolhidas aleatoriamente, e os ocupantes saem andando. A etapa **Liberando terreno** preserva recursos, alocações e cargas, inclusive ao salvar ou cancelar. Árvores, jazidas e prédios continuam obstáculos fixos. A prévia mostra tamanho, obstáculos e entrada. Não há limite fixo de moradias.
 
 **Arrumar o terreno:** abra Vila → Ampliar costa e segure **Ctrl enquanto gira a roda do mouse** para ajustar o pincel de 1×1 a 9×9. Pode passar sobre terra existente: somente a água destacada será aterrada e cobrada. A prévia mostra materiais e tempo; **Shift + arraste** marca o percurso continuamente. Água já marcada é excluída de novos pedidos. Não cria expansões remotas dependentes de obras ainda pendentes. O construtor leva os materiais e conclui o aterro. Funciona também nos buracos de ilhas já salvas. Uma célula custa 2 pedras + 1 madeira; nove células custam 10 pedras + 5 madeiras. Reparos parciais e pincéis de outros tamanhos não criam jazidas automáticas.
 

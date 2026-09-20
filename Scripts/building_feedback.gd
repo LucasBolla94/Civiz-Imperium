@@ -6,6 +6,10 @@ static func notice(text: String, action := "building") -> Dictionary:
 
 static func diagnose(building) -> Dictionary:
 	var game = building.game
+	if building.preparing_site:
+		var piles_waiting: bool = game.logistics.piles.any(func(p): return game.clearance.area(building).has(p.cell) and p.stored.get(p.resource_kind,0) > 0)
+		var missing_worker: bool = piles_waiting and not game.workers.any(func(w): return w.assignment in ["builder","carrier","idle"])
+		return notice(game.clearance.description(building),"inhabitants" if missing_worker else "building")
 	if building.demolition_requested: return notice(building.demolition_status())
 	if game.route_to_cell(game.cell_center(game.base.door()),building.door()).is_empty():
 		return notice("Entrada sem acesso; libere o caminho.")

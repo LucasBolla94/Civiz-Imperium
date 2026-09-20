@@ -16,6 +16,7 @@ const LOGISTICS = preload("res://Scripts/logistics.gd")
 const IMMIGRATION = preload("res://Scripts/immigration.gd")
 var settlement = SETTLEMENT.new()
 var logistics = LOGISTICS.new()
+var clearance = preload("res://Scripts/site_clearance.gd").new()
 var immigration
 var jobs: Array = []
 var gardens: Array = []
@@ -82,6 +83,7 @@ func _ready() -> void:
 	saves.game = self
 	work_planner.game = self
 	logistics.game = self
+	clearance.game = self
 	expansion_brush.game = self
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	land = $Water/TileMapLayer
@@ -198,7 +200,7 @@ func can_place_garden(cell: Vector2i) -> bool:
 	var rect := Rect2i(cell, Vector2i(2,2))
 	for y in range(2):
 		for x in range(2):
-			if not is_walkable(cell + Vector2i(x,y)):
+			if not is_walkable(cell + Vector2i(x,y)) or clearance.reserved(cell + Vector2i(x,y)):
 				placement_reason = "A horta exige terra livre e acessível."
 				return false
 	for source in sources + gardens:
@@ -213,10 +215,6 @@ func can_place_garden(cell: Vector2i) -> bool:
 		if rect.has_point(building.door()):
 			placement_reason = "Não bloqueie a entrada de outro prédio."
 			return false
-	for pile in logistics.piles:
-		if rect.has_point(pile.cell):
-			placement_reason = "Há materiais aguardando transporte neste terreno."
-			return false
 	if route_to_cell(cell_center(base.door()), cell).is_empty():
 		placement_reason = "A horta exige terra livre e acessível."
 		return false
@@ -230,7 +228,7 @@ func cancel_construction(building) -> bool:
 func detach_building_tasks(building, removing: bool) -> void:
 	for worker in workers:
 		var references_ticket: bool = not worker.ticket.is_empty() and (worker.ticket.source == building or worker.ticket.destination == building)
-		if worker.target == building or references_ticket or (worker.home == building and worker.state in ["to_craft", "crafting", "to_home"]):
+		if worker.target == building or worker.clear_site_id == building.entity_id or references_ticket or (worker.home == building and worker.state in ["to_craft", "crafting", "to_home"]):
 			worker.interrupt_task()
 		if removing:
 			if worker.home == building: worker.home = base
@@ -309,7 +307,7 @@ func job_entry(cell: Vector2i, height: int) -> Vector2i:
 			var spot := cell + Vector2i(x,y)
 			for direction in CARDINALS:
 				var next: Vector2i = spot + direction
-				if not Rect2i(cell, Vector2i(3,height)).has_point(next) and is_walkable(next): return next
+				if not Rect2i(cell, Vector2i(3,height)).has_point(next) and is_walkable(next) and not clearance.reserved(next): return next
 	return Vector2i(-999,-999)
 
 func can_place_job(mode: String, cell: Vector2i) -> bool:
@@ -338,6 +336,9 @@ func can_place_job(mode: String, cell: Vector2i) -> bool:
 	for y in range(height):
 		for x in range(3):
 			var spot := cell + Vector2i(x,y)
+			if clearance.reserved(spot):
+				placement_reason = "Este espaço está reservado para retirar materiais de uma obra."
+				return false
 			if (planting and not is_walkable(spot)) or (not planting and land.get_cell_source_id(spot) >= 0):
 				placement_reason = "Plantio exige terra livre; expansão exige um bloco inteiramente no mar."
 				return false
@@ -388,6 +389,7 @@ func place_job(mode: String, cell: Vector2i, automatic := false, repeat := false
 		garden.setup_garden(self, cell)
 		entities.add_child(garden)
 		gardens.append(garden)
+		clearance.prepare(garden)
 		if not automatic and not repeat: cancel_placement()
 		select_entity(garden)
 		return garden
@@ -508,6 +510,7 @@ func rebuild_navigation() -> void:
 				if navigation.is_in_boundsv(cell):
 					navigation.set_point_solid(cell)
 	for building in buildings:
+		if building.preparing_site: continue
 		for cell in building.footprint():
 			if navigation.is_in_boundsv(cell):
 				navigation.set_point_solid(cell)
@@ -664,6 +667,10 @@ func can_place(kind: String, origin: Vector2i) -> bool:
 		placement_reason = cost_status(DATA.BUILDINGS[kind].cost)
 		return false
 	var footprint: Array[Vector2i] = []
+	var reserved_footprints := {}
+	for building in buildings:
+		if building.preparing_site:
+			for cell in building.footprint(): reserved_footprints[cell] = true
 	var grid_size := DATA.building_size(kind)
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
@@ -679,25 +686,24 @@ func can_place(kind: String, origin: Vector2i) -> bool:
 		if not source.removed and source.cells.any(func(spot): return footprint.has(spot)):
 			placement_reason = "Não construa sobre uma árvore ou recurso."
 			return false
-	for pile in logistics.piles:
-		if footprint.has(pile.cell):
-			placement_reason = "Há materiais aguardando transporte neste terreno."
+	for building in buildings:
+		if building.footprint().any(func(c): return footprint.has(c)):
+			placement_reason = "Este terreno está ocupado por um prédio, recurso ou obra."
 			return false
+	if footprint.any(func(c): return workers.any(func(w): return w.clear_destination == c)):
+		placement_reason = "Este espaço está reservado para retirar materiais de uma obra."
+		return false
 	for job in jobs:
 		if job.reserves_ground() and (footprint.has(job.door()) or job.cells.any(func(c): return footprint.has(c))):
 			placement_reason = "Não bloqueie a entrada de uma obra."
 			return false
 	var door := origin + DATA.building_door(kind)
-	if not is_walkable(door):
+	if not is_walkable(door) or clearance.reserved(door):
 		placement_reason = "A entrada precisa de um quadrado livre na frente."
 		return false
 	for building in buildings:
 		if footprint.has(building.door()):
 			placement_reason = "Não bloqueie a entrada de outro prédio."
-			return false
-	for worker in workers:
-		if footprint.has(world_cell(worker.position)):
-			placement_reason = "Há um habitante neste local."
 			return false
 	# Preserva circulação, entradas e acesso a recursos após cada obra.
 	var reachable := {door: true}
@@ -706,11 +712,11 @@ func can_place(kind: String, origin: Vector2i) -> bool:
 		var cell: Vector2i = pending.pop_back()
 		for direction in CARDINALS:
 			var neighbor: Vector2i = cell + direction
-			if not reachable.has(neighbor) and not footprint.has(neighbor) and is_walkable(neighbor):
+			if not reachable.has(neighbor) and not footprint.has(neighbor) and not reserved_footprints.has(neighbor) and is_walkable(neighbor):
 				reachable[neighbor] = true
 				pending.append(neighbor)
 	for cell in land.get_used_cells():
-		if is_walkable(cell) and not footprint.has(cell) and not reachable.has(cell):
+		if is_walkable(cell) and not footprint.has(cell) and not reserved_footprints.has(cell) and not reachable.has(cell):
 			placement_reason = "Este local bloquearia a passagem dos habitantes."
 			return false
 	for source in sources:
@@ -729,6 +735,7 @@ func place_building(kind: String, origin: Vector2i, repeat := false):
 		notify(placement_reason)
 		return null
 	var building = add_building(kind, origin)
+	clearance.prepare(building)
 	rebuild_navigation()
 	if not repeat: placement_kind = ""
 	select_entity(building)
@@ -880,6 +887,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if expansion_dragging and (camera.input_blocked() or not get_window().has_focus()): end_expansion_drag()
 	if not simulation_paused and not settlement.extinct:
+		clearance.tick()
 		aid_cooldown = maxf(0, aid_cooldown - delta * simulation_speed)
 		settlement.tick_moves()
 		automation.tick(delta * simulation_speed)
@@ -967,10 +975,12 @@ func draw_placement() -> void:
 			var rect := Rect2(origin + Vector2(x, y) * 16, Vector2(16, 16))
 			var cell := preview_cell + Vector2i(x,y)
 			var occupied := not is_walkable(cell)
-			occupied = occupied or logistics.piles.any(func(pile): return pile.cell == cell)
+			occupied = occupied or buildings.any(func(b): return b.footprint().has(cell))
+			occupied = occupied or workers.any(func(w): return w.clear_destination == cell)
 			for source in sources + gardens:
 				if not source.removed and source.cells.has(cell): occupied = true
 			var cell_color := Color("f2847c") if occupied else Color("a6d887")
+			if not occupied and (logistics.piles.any(func(p): return p.cell == cell) or workers.any(func(w): return world_cell(w.position) == cell)): cell_color = Color("e8be78")
 			placement_overlay.draw_rect(rect, Color(cell_color, 0.28))
 			placement_overlay.draw_rect(rect, Color(cell_color, 0.8), false, 0.5)
 	var entry := cell_center(preview_cell + DATA.building_door(placement_kind))

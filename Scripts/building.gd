@@ -32,6 +32,7 @@ var craft_reserved_by = null
 var tool_orders := {"axe": 0, "pickaxe": 0}
 var priority := 1
 var work_started := false
+var preparing_site := false
 var demolition_requested := false
 var demolition_started := false
 var demolition_progress := 0.0
@@ -133,6 +134,7 @@ func upgrade() -> bool:
 	return true
 
 func build(delta: float) -> void:
+	if preparing_site: return
 	if delta <= 0 or not needs_work() or not materials.ready(): return
 	if demolition_requested:
 		demolition_started = true
@@ -220,9 +222,12 @@ func craft(delta: float) -> bool:
 	return true
 func refresh_visual() -> void:
 	sprite.modulate = Color.WHITE if completed else Color(1.0, 0.85, 0.6, 0.45)
+	if preparing_site: sprite.modulate.a = 0.2
 	queue_redraw()
 
 func _draw() -> void:
+	if preparing_site:
+		draw_rect(Rect2(-grid_size.x*8,-grid_size.y*16,grid_size.x*16,grid_size.y*16),Color("e8be78"),false,1)
 	if selected:
 		draw_rect(Rect2(-grid_size.x * 8 - 1, -grid_size.y * 16 - 1, grid_size.x * 16 + 2, grid_size.y * 16 + 2), Color("f3dc9b"), false, 1)
 	var color: Color = game.DATA.BUILDINGS[kind].color

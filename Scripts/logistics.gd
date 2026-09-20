@@ -15,6 +15,7 @@ func reserved(source, resource: String) -> int:
 func incoming(destination, resource := "") -> int:
 	var total := 0
 	for ticket in tickets:
+		if ticket.get("clearance",false): continue
 		if ticket.destination == destination and (resource == "" or ticket.resource == resource): total += ticket.amount
 	return total
 
@@ -84,6 +85,7 @@ func claim_piles(worker, only_food := false) -> Dictionary:
 	var best: Dictionary = {}
 	var best_score := INF
 	for pile in piles:
+		if game.clearance.site_at(pile.cell) != null: continue
 		var resource: String = pile.resource_kind
 		if only_food and not game.DATA.RESOURCES[resource].has("nutrition"): continue
 		var amount := available(pile, resource)
@@ -97,6 +99,7 @@ func claim_piles(worker, only_food := false) -> Dictionary:
 	return commit_proposal(worker, best)
 
 func append_material_requests(requests: Array, destination) -> void:
+	if destination.get("preparing_site") == true: return
 	for resource in destination.materials.required:
 		var demand: int = destination.materials.missing(resource) - incoming(destination, resource)
 		if demand > 0: requests.append({"destination": destination, "resource": resource, "amount": demand, "material": true})
@@ -112,6 +115,7 @@ func choose_request(worker, requests: Array) -> Dictionary:
 	var best_priority := -1
 	for request in requests:
 		for source in piles + game.buildings:
+			if source is PILE and game.clearance.site_at(source.cell) != null: continue
 			if source == request.destination: continue
 			# Workshop ingredients are a production buffer, not an export warehouse.
 			# Otherwise two workshops continuously take each other's inputs.

@@ -17,7 +17,7 @@ func snapshot() -> Dictionary:
 	data.next_id = game.settlement.next_id
 	for cell in game.land.get_used_cells(): data.land.append([cell, game.land.get_cell_source_id(cell), game.land.get_cell_atlas_coords(cell), game.land.get_cell_alternative_tile(cell)])
 	for building in game.buildings:
-		var item := fields(building, ["kind", "origin", "completed", "progress", "stored", "delivered", "level", "upgrading", "tool_targets", "tool_orders", "craft_progress", "crafting", "priority", "entity_id", "work_started", "demolition_requested", "demolition_started", "demolition_progress"])
+		var item := fields(building, ["kind", "origin", "completed", "progress", "stored", "delivered", "level", "upgrading", "tool_targets", "tool_orders", "craft_progress", "crafting", "priority", "entity_id", "work_started", "preparing_site", "demolition_requested", "demolition_started", "demolition_progress"])
 		item.materials = {"required": building.materials.required, "delivered": building.materials.delivered}
 		data.buildings.append(item)
 	for source in game.sources: data.sources.append(fields(source, ["is_tree", "is_quarry", "origin", "stage", "age", "remaining", "removed", "initial_reserve", "cut_requested", "cut_started"]))
@@ -27,11 +27,11 @@ func snapshot() -> Dictionary:
 		item.materials = {"required": job.materials.required, "delivered": job.materials.delivered}
 		data.jobs.append(item)
 	for garden in game.gardens:
-		var item := fields(garden, ["origin", "phase", "activity", "age", "remaining", "progress", "priority", "auto_replant", "first_plant_pending", "completed"])
+		var item := fields(garden, ["origin", "phase", "preparing_site", "entity_id", "activity", "age", "remaining", "progress", "priority", "auto_replant", "first_plant_pending", "completed"])
 		item.materials = {"required": garden.materials.required, "delivered": garden.materials.delivered}
 		data.gardens.append(item)
 	for worker in game.workers:
-		var item := fields(worker, ["position", "assignment", "cargo", "cargo_resource", "spare_tools"])
+		var item := fields(worker, ["position", "assignment", "cargo", "cargo_resource", "spare_tools", "clear_destination", "clear_site_id"])
 		item.home = game.buildings.find(worker.assigned_home)
 		item.residence = game.buildings.find(worker.residence)
 		item.move_destination = game.buildings.find(worker.move_destination)
@@ -92,6 +92,7 @@ func valid(data) -> bool:
 	for item in data.buildings:
 		if not game.DATA.BUILDINGS.has(item.get("kind", "")) or not item.get("origin") is Vector2i or not item.get("stored") is Dictionary: return false
 		if item.get("kind") == "base" and item.get("demolition_requested", false): return false
+		if item.has("preparing_site") and (not item.preparing_site is bool or (item.preparing_site and item.get("completed",false))): return false
 	for item in data.jobs:
 		if not item is Dictionary: return false
 		if item.get("kind") == "expand" and item.has("cells"):
@@ -111,6 +112,8 @@ func valid(data) -> bool:
 	for item in data.workers:
 		if not game.DATA.ACTIVITIES.has(item.get("assignment", "")) or not item.get("person") is Dictionary: return false
 		if item.get("home", -1) < 0 or item.home >= data.buildings.size(): return false
+		if item.has("clear_destination") and not item.clear_destination is Vector2i: return false
+		if item.has("clear_site_id") and not item.clear_site_id is int: return false
 	return data.has("policy") and data.has("immigration") and data.has("camera") and data.has("next_id")
 
 func apply(object, values: Dictionary, except: Array = []) -> void:

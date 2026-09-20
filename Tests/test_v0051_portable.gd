@@ -77,6 +77,25 @@ func run() -> void:
 	food.level = 1
 	game.select_entity(food)
 	assert(game.hud.garden_button.disabled and game.hud.detail_label.text.contains("hortas"))
+	# Occupied construction sites must be cleared in the actual packaged game.
+	var site_cell := Vector2i(59,24)
+	game.logistics.drop(site_cell+Vector2i.ONE,"axe",8)
+	game.workers[0].position = game.cell_center(site_cell+Vector2i(2,1))
+	var house = game.place_building("house",site_cell)
+	assert(house != null and house.preparing_site)
+	assert(game.saves.save_file() and game.saves.load_file())
+	house = game.buildings.filter(func(b): return b.kind == "house")[0]
+	game.simulation_paused = false
+	for worker in game.workers: worker.assign_to("builder",game.base)
+	for step in 1600:
+		game._process(0.1)
+		for worker in game.workers: worker._process(0.1)
+		if house.completed: break
+	assert(house.completed and not house.preparing_site)
+	assert(not game.logistics.piles.any(func(p): return house.footprint().has(p.cell)))
+	assert(not game.workers.any(func(w): return house.footprint().has(game.world_cell(w.position))))
+	game.simulation_paused = true
+	game.select_entity(house)
 	if DisplayServer.get_name() != "headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png(OS.get_environment("CIVIZ_CAPTURE"))

@@ -372,3 +372,13 @@ V0.0.5.1  ·  EXPANSÃO FLUIDA E ADMINISTRAÇÃO CLARA	V0.0.5.1  ·  FLUID EXPAN
 Lenhadores cortam árvores esgotadas ou marcadas com Cortar agora.	Woodcutters cut exhausted trees or trees marked with Cut down now.
 Células: %d · Pedras: %d · Madeiras: %d · Trabalho: %.1fs\nCtrl + roda: tamanho · Shift + arraste: pintar · Esc: cancelar	Cells: %d · Stone: %d · Wood: %d · Work: %.1fs\nCtrl + wheel: size · Shift + drag: paint · Esc: cancel
 Aguardando produção	Awaiting production
+Este espaço está reservado para retirar materiais de uma obra.	This space is reserved for clearing construction materials.
+Liberando terreno: transportando materiais para um local livre.	Clearing the site: moving materials to a free position.
+Limpeza aguardando construtor, transportador ou habitante livre.	Site clearing awaits a builder, carrier or idle resident.
+Liberando terreno: aguardando retirada dos materiais e espaço livre.	Clearing the site: awaiting material removal and a free position.
+Liberando terreno: aguardando os habitantes saírem.	Clearing the site: waiting for residents to move out.
+Retirando materiais da área de construção	Removing materials from the construction site
+Aguardando espaço livre para desocupar a obra	Waiting for free space to leave the construction site
+Saindo da área de construção	Leaving the construction site
+Levando materiais para um local livre	Moving materials to a free position
+Materiais soltos serão retirados; habitantes sairão antes da construção.	Loose materials will be moved; residents will leave before construction.

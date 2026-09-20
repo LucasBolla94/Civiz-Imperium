@@ -10,9 +10,12 @@ var priority := 1
 var auto_replant := false
 var first_plant_pending := true
 var completed := false
+var preparing_site := false
+var entity_id := -1
 
 func setup_garden(controller, cell: Vector2i) -> void:
 	game = controller
+	for garden in game.gardens: entity_id = mini(entity_id,garden.entity_id-1)
 	origin = cell
 	resource_kind = "produce"
 	# Relative to Simulation (z=1): above terrain by scene order, below residents.
@@ -23,6 +26,8 @@ func setup_garden(controller, cell: Vector2i) -> void:
 	materials.required = game.DATA.GARDEN_COST.duplicate()
 
 func door() -> Vector2i: return origin + Vector2i(0, 1)
+func footprint() -> Array[Vector2i]: return cells.duplicate()
+func refresh_visual() -> void: queue_redraw()
 func blocks_ground() -> bool: return false
 func blocking_cells() -> Array[Vector2i]: return []
 func work_cells() -> Array[Vector2i]:
@@ -46,6 +51,7 @@ func request_plant() -> bool:
 	return true
 
 func build(delta: float) -> void:
+	if preparing_site: return
 	if delta <= 0 or not needs_work() or not materials.ready(): return
 	progress += delta
 	if progress >= work_duration():

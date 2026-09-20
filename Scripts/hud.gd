@@ -702,6 +702,7 @@ func refresh() -> void:
 		if not game.placement_kind.is_empty():
 			var size: Vector2i = game.DATA.building_size(game.placement_kind)
 			detail_label.text = "Área: %d × %d células + entrada livre na frente.\n" % [size.x,size.y] + detail_label.text
+			detail_label.text += "\nMateriais soltos serão retirados; habitantes sairão antes da construção."
 		if game.action_mode == "expand":
 			var plan: Dictionary = game.expansion_preview
 			title_label.text = "Aterrar terreno · Pincel %d × %d" % [game.expansion_brush_size,game.expansion_brush_size]
@@ -714,6 +715,8 @@ func refresh() -> void:
 			detail_label.text = selected.demolition_status()
 			progress.visible = true
 			progress.value = selected.demolition_progress * 10
+		elif selected.preparing_site:
+			detail_label.text = game.clearance.description(selected)
 		elif selected.needs_work():
 			detail_label.text = "Entregues: " + selected.materials.text(game.DATA) + (" · Construindo" if selected.materials.ready() else " · Aguardando transporte / materiais")
 			progress.visible = true
@@ -734,7 +737,7 @@ func refresh() -> void:
 		detail_label.text = resident_text(selected).replace("\n"," · ")
 	elif is_garden:
 		title_label.text = "Horta 2 × 2"
-		detail_label.text = selected.description()
+		detail_label.text = game.clearance.description(selected) if selected.preparing_site else selected.description()
 		progress.visible = true
 		progress.value = 100.0 * selected.age / game.DATA.GARDEN_GROW_SECONDS if selected.phase == "growing" else (100.0 * selected.remaining / game.DATA.GARDEN_YIELD if selected.phase == "ripe" else 100.0 * selected.progress / selected.work_duration())
 	elif is_instance_valid(selected) and selected.has_method("description"):

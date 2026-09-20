@@ -66,6 +66,10 @@ func run() -> void:
 	check(pile_total("stone") == 11 and game.stock.stone == stored_before, "Cancel preserves eight delivered plus three in transit")
 	check(game.logistics.tickets.is_empty() and game.available_stock().wood == 20, "Cancel releases reservations without inventory refund")
 	house = site("house")
+	# The second order may reuse the salvaged pile's cell; clear it physically first.
+	for step in 600:
+		if not house.preparing_site: break
+		tick(0.1)
 	house.materials.delivered = house.materials.required.duplicate()
 	house.build(0.1)
 	check(house.work_started and not house.completed, "First actual work persists the expenditure milestone")

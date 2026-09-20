@@ -14,6 +14,9 @@ var cargo_resource := ""
 var complaint_time := 0.0
 var spare_tools: Dictionary = {}
 var preferred_source = null
+var clear_destination := Vector2i(-999,-999)
+var clear_site_id := 0
+var evacuation_destination := Vector2i(-999,-999)
 var repath_delay := 0.0
 var repath_attempts := 0
 var game
@@ -82,7 +85,10 @@ func apply_assignment() -> void:
 	think_timer = 0
 	queue_redraw()
 
-func interrupt_task() -> void:
+func interrupt_task(preserve_cargo := false) -> void:
+	clear_destination = Vector2i(-999,-999)
+	clear_site_id = 0
+	evacuation_destination = Vector2i(-999,-999)
 	game.work_planner.release(self)
 	if is_instance_valid(home) and home.craft_reserved_by == self: home.craft_reserved_by = null
 	repath_attempts = 0
@@ -91,7 +97,7 @@ func interrupt_task() -> void:
 		target.reserved_by = null
 	game.logistics.release(self)
 	ticket = {}
-	if cargo > 0:
+	if cargo > 0 and not preserve_cargo:
 		game.logistics.drop(game.world_cell(position), cargo_resource, cargo)
 		cargo = 0
 	path.clear()
@@ -135,6 +141,9 @@ func _process(delta: float) -> void:
 	complaint_time = maxf(0, complaint_time - delta)
 	repath_delay = maxf(0, repath_delay - delta)
 	if needs.tick(self, delta):
+		queue_redraw()
+		return
+	if game.clearance.process_worker(self,delta):
 		queue_redraw()
 		return
 	if is_instance_valid(move_destination):
@@ -346,6 +355,7 @@ func find_job() -> void:
 		return_home()
 		return
 	if assignment != kind: apply_assignment()
+	if game.clearance.claim(self): return
 	if find_tool(): return
 	if kind == "food" and game.settlement.food_units() < game.workers.size() * game.DATA.FOOD_RESERVE_PER_PERSON:
 		if take_harvest():
@@ -357,6 +367,7 @@ func find_job() -> void:
 		var shortest := INF
 		var best_priority := -1
 		for job in game.jobs + game.buildings + game.gardens:
+			if job.get("preparing_site") == true: continue
 			if not job.needs_work() or not job.materials.ready(): continue
 			var activity: String = job.activity if job is WORLD_JOB or job is GARDEN_JOB else "builder"
 			if activity != kind or (is_instance_valid(job.reserved_by) and job.reserved_by != self): continue

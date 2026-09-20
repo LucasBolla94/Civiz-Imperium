@@ -1,10 +1,24 @@
 # Civiz Imperium — Plano V0.0.5.1
 
 - Versão alvo: **0.0.5.1**, escolhida pelo usuário para este pacote.
-- Revisão compartilhada: **17**.
+- Revisão compartilhada: **18**.
 - Par: [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md).
 - Base: V0.0.5 entregue.
 - Estado: **escopo fechado implementado e validado; propostas exploratórias permanecem fora da versão**.
+
+## Adendo implementado — liberar terreno antes da construção (revisão 18)
+
+**V0051-08, autorizado pelo usuário:** aceitar marcar prédios e hortas sobre materiais soltos e habitantes. O usuário confirmou expressamente que árvores e jazidas inteiras não devem ser movidas.
+
+- Área e materiais da obra ficam reservados ao marcar. Se houver ocupantes ou pilhas, entrar em **Liberando terreno**, mantendo o chão acessível até a retirada terminar. Não iniciar construção nem entrega dos materiais da obra durante essa etapa.
+- Habitantes presentes na área ou entrada saem andando para posição livre, sem teleportar, mudar profissão ou apagar a carga carregada. Depois retomam suas atividades.
+- Construtores, transportadores ou habitantes já livres recolhem as pilhas fisicamente, respeitando a capacidade de carga atual. Colocam cada carga numa posição sorteada entre locais próximos, livres e alcançáveis, fora das obras, árvores, hortas, portas e destinos já reservados. Sem preço extra ou rendimento adicional.
+- Pilhas incluem Hortifruti, madeira, pedra e ferramentas. Preservar cada unidade; várias pilhas ou cargas maiores que a capacidade exigem transporte separado. Reservas antigas ainda não recolhidas são liberadas; não duplicar pedidos de coleta. Cargas já em trânsito permanecem preservadas.
+- Se faltar trabalhador elegível ou local livre, a obra aguarda. Ao liberar o terreno, o prédio passa a bloquear sua área e a construção normal começa; a horta continua transitável.
+- Cancelamento libera a área e preserva itens conforme as regras existentes. Saves preservam preparação, destino e carga em transporte; pedidos de retirada ainda não recolhidos são reorganizados ao carregar. Saves anteriores continuam válidos.
+- Prévia diferencia materiais/habitantes removíveis dos obstáculos fixos. Estado e mensagens em PT/EN. Não mover árvores, jazidas, prédios, hortas existentes nem obras sobrepostas.
+
+Validação: `test_site_clearance.gd` (23 verificações), `test_site_clearance_edges.gd` (17) e `test_site_clearance_ui.gd` (6 cliques/estados e capturas). Cobertos transporte físico, evacuação com carga, quantidades a cada passo, várias pilhas por célula, reservas concorrentes, falta de destino, retomada, cancelamento, save antes/depois da coleta, habitante exausto, hortas e obstáculos fixos. Regressões de construção, logística e V005/V004 executadas. O teste do executável exportado também exige limpar uma moradia e concluí-la depois de save/load.
 
 ## Registro de implementação — revisão 16
 
@@ -261,3 +275,4 @@ Esta sequência não é autorização de execução. Não alterar o jogo durante
 
 | 16 | Implementado o escopo fechado 01–07; registrados diagnóstico, compatibilidade, testes, tradução, reutilização de balão e empacotamento reproduzível. |
 | 17 | Balão de aviso reposicionado à esquerda do prédio conforme solicitado; mantidos o asset e o clique contextual. |
+| 18 | Construção sobre pilhas e habitantes com liberação física prévia; confirmação de que somente materiais soltos são removíveis; integração com reservas, navegação, cancelamento e saves. |
