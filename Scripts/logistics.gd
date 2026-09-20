@@ -69,7 +69,7 @@ func claim(worker, only_destination = null) -> Dictionary:
 	if game.settlement.food_units() < game.workers.size() * game.DATA.FOOD_RESERVE_PER_PERSON:
 		var urgent := claim_piles(worker, true)
 		if not urgent.is_empty(): return urgent
-	for destination in game.buildings + game.jobs:
+	for destination in game.buildings + game.jobs + game.gardens:
 		if destination.needs_work(): append_material_requests(requests, destination)
 	var result := choose_request(worker, requests)
 	if not result.is_empty(): return result

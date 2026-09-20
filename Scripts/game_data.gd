@@ -2,14 +2,20 @@ extends RefCounted
 const CATALOG = preload("res://Scripts/example_catalog.gd")
 ## Catálogo e balanceamento da V0.0.3. Recursos alimentares possuem identidade própria.
 
-const STARTING_STOCK = {"fruit": 18, "stone": 45, "wood": 20, "axe": 2, "pickaxe": 2}
+const STARTING_STOCK = {"produce": 18, "stone": 45, "wood": 20, "axe": 2, "pickaxe": 2}
 const WALK_SPEED = 46.0
 const CARRY_CAPACITY = 5
 const HARVEST_SECONDS = 0.8
-const SOURCE_STOCK = {"fruit": 80, "stone": 480, "wood": 30}
-const TREE_SECONDS = [8.0, 12.0, 16.0, 20.0, 160.0, 20.0, 0.0]
+const SOURCE_STOCK = {"produce": 50, "stone": 480, "wood": 30}
+const TREE_SECONDS = [30.0, 40.0, 50.0, 60.0, 0.0, 0.0, 0.0]
+const GARDEN_COST = {"wood": 10}
+const GARDEN_BUILD_SECONDS = 10.0
+const GARDEN_PLANT_SECONDS = 4.0
+const GARDEN_GROW_SECONDS = 60.0
+const GARDEN_YIELD = 15
+const DEMOLITION_SECONDS = 10.0
 const TREE_NAMES = ["Broto", "Muda", "Árvore jovem", "Árvore adulta", "Frutificação", "Envelhecendo", "Madeira: pronta para corte"]
-const PLANT_COST = {"fruit": 2}
+const PLANT_COST = {"produce": 2}
 const EXPAND_COST = {"stone": 10, "wood": 5}
 const CONSTRUCTIBLE = ["house", "food", "stone", "wood", "workshop", "warehouse"]
 const ACTIVITIES = {
@@ -38,8 +44,8 @@ const BUILDINGS = {
 		"color": Color("e8be78"), "example": "Building-6", "door_x": 3,
 	},
 	"food": {
-		"name": "Depósito de frutas", "short": "Comida", "worker": "Coletor de comida",
-		"description": "Organiza a coleta de frutas e armazena as entregas.",
+		"name": "Depósito de Hortifruti", "short": "Comida", "worker": "Coletor de comida",
+		"description": "Organiza a coleta de Hortifruti e armazena as entregas.",
 		"cost": {"stone": 20}, "build_seconds": 8.0,
 		"color": Color("a6d887"), "example": "Building-2",
 	},
@@ -70,7 +76,7 @@ static func cost_text(cost: Dictionary) -> String:
 	return " + ".join(parts)
 
 const RESOURCES = {
-	"fruit": {"name": "frutas", "nutrition": 25.0},
+	"produce": {"name": "Hortifruti", "nutrition": 25.0},
 	"stone": {"name": "pedras"}, "wood": {"name": "madeiras"},
 	"axe": {"name": "machados"}, "pickaxe": {"name": "picaretas"},
 }
@@ -96,7 +102,7 @@ const XP_MAX_BONUS = 0.5
 const IMMIGRATION_INTERVAL = 180.0
 const EXPEDITION_SECONDS = 35.0
 const VOYAGE_SECONDS = 12.0
-const EXPEDITION_COST = {"fruit": 5, "wood": 3}
+const EXPEDITION_COST = {"produce": 5, "wood": 3}
 const FOOD_RESERVE_PER_PERSON = 3
 const HOUSE_CAPACITY = 4
 const HOUSE_UPGRADE_COST = {"wood": 12, "stone": 8}
@@ -108,7 +114,7 @@ static func empty_stock() -> Dictionary:
 	return result
 
 static func resource_for_activity(activity: String) -> String:
-	return "fruit" if activity == "food" else activity
+	return "produce" if activity == "food" else activity
 
 
 const STORAGE_CAPACITY = {"base":120,"house":0,"workshop":60,"warehouse":200,"food":200,"wood":200,"stone":200}
@@ -125,5 +131,30 @@ const FAMILIAR_SOURCE_FACTOR = 0.85
 const IDLE_RECHECK_SECONDS = 1.2
 const ROUTE_RETRY_SECONDS = 1.0
 const ROUTE_RETRY_LIMIT = 3
+
+static var atlas_cache := {}
+static var resource_texture_cache := {}
+static func atlas(path: String, region: Rect2) -> Texture2D:
+	var key := path + str(region)
+	if not atlas_cache.has(key):
+		var texture := AtlasTexture.new()
+		texture.atlas = load(path)
+		texture.region = region
+		atlas_cache[key] = texture
+	return atlas_cache[key]
+
+static func resource_texture(resource: String, pile := false) -> Texture2D:
+	if resource == "produce":
+		var path := "res://Assets/Items/Piles/produce_pile.png" if pile else "res://Assets/Items/Resources/produce.png"
+		# Canvas draw commands retain the RID, not the Resource. Keep both variants
+		# alive after _draw returns, including when no HUD icon holds the texture.
+		if not resource_texture_cache.has(path): resource_texture_cache[path] = load(path)
+		return resource_texture_cache[path]
+	var paths := {
+		"wood": "res://Assets/Icons/RPG icons/Extras/Wood.png",
+		"stone": "res://Assets/Icons/RPG icons/Extras/Stones.png",
+		"axe": "res://Assets/Icons/RPG icons/Weapons and Armor/1. Wood/Axe.png",
+		"pickaxe": "res://Assets/Icons/RPG icons/Weapons and Armor/1. Wood/Pickaxe.png"}
+	return atlas(paths[resource], Rect2(0, 0, 16, 16))
 const FINISH_DELIVERY_SECONDS = 5.0
 const EXHAUSTED_ENERGY = 5.0

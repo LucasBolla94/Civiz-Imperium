@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="Civiz Imperium"
-config/version="0.0.4"
+config/version="0.0.5"
 run/main_scene="res://Scenes/main_menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
+Localization="*res://Scripts/localization.gd"
 WindowLayout="*res://Scripts/window_layout.gd"
 
 [display]

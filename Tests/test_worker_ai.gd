@@ -19,7 +19,7 @@ func run() -> void:
 	check(a.target == chosen and a.path[-1] == end, "Worker keeps its chosen job while travelling")
 	tick(35)
 	check(a.person.experience.get("food",0) > 0 and b.person.experience.get("food",0) > 0, "Both reserved workplaces produce real resources")
-	# Last available fruit cannot lure multiple residents to an empty tree.
+	# Last available produce cannot lure multiple residents to an empty tree.
 	fresh()
 	stop_workers()
 	game.sources[1].remaining = 1
@@ -28,13 +28,13 @@ func run() -> void:
 	for worker in [a,b]:
 		worker.assign_to("food",game.base)
 		worker.find_job()
-	check(a.state == "to_source" and b.state == "idle" and b.path.is_empty(), "Second worker waits instead of chasing the last reserved fruit")
+	check(a.state == "to_source" and b.state == "idle" and b.path.is_empty(), "Second worker waits instead of chasing the last reserved produce")
 	a.interrupt_task()
 	b.find_job()
 	check(b.state == "to_source", "An interrupted collection frees the work site immediately")
 	game.sources[1].set_stage(5)
 	b._process(0.1)
-	check(b.path.is_empty() and not game.work_planner.claims.has(b), "Expired fruit source is abandoned before walking the rest of the journey")
+	check(b.path.is_empty() and not game.work_planner.claims.has(b), "Expired produce source is abandoned before walking the rest of the journey")
 	# A mine permits two people, but not on the same tile or the same last units.
 	fresh()
 	stop_workers()
@@ -171,18 +171,18 @@ func run() -> void:
 	# Urgent nutrition beats discretionary planting or carrying building supplies.
 	fresh()
 	stop_workers()
-	game.base.stored.fruit = 2
+	game.base.stored.produce = 2
 	var planting = game.place_job("plant",Vector2i(43,24))
 	a = game.workers[0]
 	a.assign_to("food",game.base)
 	a.find_job()
 	check(planting != null and a.state == "to_source", "Collector replenishes critically low food before discretionary planting")
 	a.interrupt_task()
-	game.logistics.drop(Vector2i(61,33),"fruit",5)
+	game.logistics.drop(Vector2i(61,33),"produce",5)
 	house = game.add_building("house",Vector2i(43,29))
 	game.rebuild_navigation()
 	var urgent: Dictionary = game.logistics.claim(a)
-	check(urgent.resource == "fruit" and not urgent.material, "Transport rescues waiting food before nonessential construction supplies")
+	check(urgent.resource == "produce" and not urgent.material, "Transport rescues waiting food before nonessential construction supplies")
 	# No phantom labour when a completed batch has no room for its output.
 	fresh()
 	shop = game.add_building("workshop",Vector2i(58,23),true)

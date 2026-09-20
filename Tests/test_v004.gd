@@ -90,8 +90,7 @@ func run() -> void:
 	check(game.automation.allowed_amount(stone,5) == 0, "Cargo counts toward stock goal")
 	var building = game.add_building("house",Vector2i(42,23))
 	check(game.automation.allowed_amount(stone,5) == 5, "Construction shortages override reserve goal")
-	game.automation.population_target = 3
-	check(game.immigration.blocked_reason().contains("Meta"), "Population cap explains why arrivals stop")
+	check(game.immigration.blocked_reason().contains("vaga"), "Housing availability explains why arrivals stop")
 	# Renewal keeps the plot, but removing automation does not remove its tree.
 	var tree = game.sources.filter(func(s): return s.is_tree)[0]
 	game.automation.toggle_orchard(tree.origin)
@@ -144,10 +143,10 @@ func run() -> void:
 	game.automation.toggle_orchard(orchard_cell)
 	tree.set_stage(6)
 	tree.take(tree.remaining,"wood")
-	game.base.stored.fruit = 1
+	game.base.stored.produce = 1
 	game.automation.tick(3)
 	check(game.jobs.is_empty(), "Orchard will not consume the last food reserve")
-	game.base.stored.fruit = 30
+	game.base.stored.produce = 30
 	game.action_mode = "expand"
 	game.automation.tick(3)
 	check(game.jobs.size() == 1 and game.action_mode == "expand", "Renewal schedules once without cancelling player's active placement")
@@ -159,7 +158,7 @@ func run() -> void:
 	# A walkable but disconnected landing must trigger a different dock.
 	fresh()
 	game.add_building("house",Vector2i(42,23),true)
-	game.base.stored.fruit = 40
+	game.base.stored.produce = 40
 	game.rebuild_navigation()
 	game.immigration.find_dock()
 	var old_dock: Vector2i = game.immigration.dock

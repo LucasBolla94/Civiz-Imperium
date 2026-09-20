@@ -54,9 +54,12 @@ func _ready() -> void:
 	exit_button.text = "Sair"
 	exit_button.pressed.connect(func(): get_tree().quit())
 	rows.add_child(exit_button)
+	rows.add_child(get_node("/root/Localization").selector())
 	var version := Label.new()
-	version.text = "V0.0.4  ·  A VILA GANHA AUTONOMIA\nSalve pela Vila · Salvamento automático a cada 2 minutos."
+	version.text = "V0.0.5  ·  HORTAS E UMA VILA EM CRESCIMENTO\nSalve pela Vila · Salvamento automático a cada 2 minutos."
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_font_size_override("font_size", 12)
 	rows.add_child(version)
+	get_node("/root/Localization").language_changed.connect(func(): get_node("/root/Localization").render(canvas))
+	get_node("/root/Localization").render(canvas)
 

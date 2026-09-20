@@ -1,2 +1,4 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+# Translation fragments intentionally retain trailing spaces before concatenation.
+Assets/Localization/*.tsv whitespace=-blank-at-eol

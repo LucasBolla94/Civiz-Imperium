@@ -30,7 +30,7 @@ func run() -> void:
 	check(game.workers.size() == 3, "Starts with 3 residents")
 	check(game.workers.filter(func(w): return w.person.is_king).size() == 1, "Exactly one King")
 	check(game.population_limit() == 3 and game.workers.all(func(w): return w.residence == game.base), "Founders have assigned base residence")
-	check(not game.stock.has("food") and game.stock.fruit == 18, "Fruit is an independent resource")
+	check(not game.stock.has("food") and game.stock.produce == 18, "Fruit is an independent resource")
 	check(game.workplace_for("carrier") == null, "Carrier gated before evolution")
 	check(not game.base.enqueue(), "No immigration without housing")
 	var house = site("house")
@@ -44,7 +44,7 @@ func run() -> void:
 	check(house.completed and house.materials.ready(), "Founders supply and build house without carrier")
 	check(game.population_limit() == 7, "Housing determines population capacity")
 	check(game.immigration.arrivals == 0, "No instant settlers")
-	game.base.store("fruit",30)
+	game.base.store("produce",30)
 	check(game.immigration.prepare_expedition(), "Healthy colony can prepare expedition")
 	var count: int = game.workers.size()
 	check(game.workers.size() == count, "Expedition never spawns immediately")
@@ -79,9 +79,9 @@ func run() -> void:
 	tree.set_stage(4)
 	check(tree.harvestable("food") and not tree.harvestable("wood"), "Fruit stage cannot be cut for wood")
 	tree.take(tree.remaining,"food")
-	check(tree.stage == 4 and tree.blocks_ground(), "Harvest does not skip aging")
+	check(tree.stage == 6 and tree.blocks_ground(), "Complete harvest releases the tree for lumber")
 	tree._process(161)
-	check(tree.stage == 5, "Tree ages after fruiting")
+	check(tree.stage == 6, "Depleted tree remains wood without a white canopy")
 	tree._process(21)
 	check(tree.stage == 6 and tree.harvestable("wood"), "Old tree becomes lumber")
 	tree.take(tree.remaining,"wood")
@@ -173,7 +173,7 @@ func run() -> void:
 		check(game.stock.axe == axes, "Workshop stops at stock target")
 	# Carrier unlock, independent producer logistics and physical expansion.
 	fresh()
-	game.base.stored = {"fruit":30,"stone":40,"wood":30,"axe":2,"pickaxe":2}
+	game.base.stored = {"produce":30,"stone":40,"wood":30,"axe":2,"pickaxe":2}
 	check(game.upgrade_village() and game.village_level == 2 and game.population_limit() == 3, "Evolution unlocks capacity of cargo, not magic housing")
 	check(game.workplace_for("carrier") == game.base and game.carry_capacity() == 7, "Specialized carrier unlocks at level 2")
 	game.workers[0].assign_to("carrier",game.base)
@@ -194,7 +194,7 @@ func run() -> void:
 	for second in range(90):
 		if plant.completed: break
 		tick(1)
-	check(plant.completed and game.planted_count == 1, "Planter uses delivered fruits and plants tree")
+	check(plant.completed and game.planted_count == 1, "Planter uses delivered produces and plants tree")
 	# Reservations for the last warehouse slot and delivery cancellation.
 	fresh()
 	stop_workers()
@@ -222,10 +222,10 @@ func run() -> void:
 	tick(20)
 	check(game.workers.size() == 3 and game.immigration.sailing, "Ship waits if housing capacity becomes unavailable")
 	dwelling.completed = true
-	game.stock = {"fruit":0}
+	game.stock = {"produce":0}
 	tick(2)
 	check(game.workers.size() == 3, "Ship waits if food economy fails")
-	game.base.store("fruit",20)
+	game.base.store("produce",20)
 	tick(1)
 	check(game.workers.size() == 4 and not game.immigration.sailing, "Ship disembarks exactly once after conditions recover")
 	# Fatigue cannot keep a building job locked while home is inaccessible.
@@ -254,10 +254,10 @@ func run() -> void:
 	# Survival clock gives the player several minutes to recover; meals scale by person.
 	fresh()
 	stop_workers()
-	var food_before: int = game.stock.fruit
+	var food_before: int = game.stock.produce
 	for inhabitant in game.workers: inhabitant.person.nutrition = 74
 	tick(0.1)
-	check(game.stock.fruit == food_before - 3, "Food consumption scales with population and consumes specific foods")
+	check(game.stock.produce == food_before - 3, "Food consumption scales with population and consumes specific foods")
 	game.stock = {}
 	tick(300)
 	check(game.workers.size() == 3 and game.workers[0].person.nutrition > game.DATA.HUNGER_SLOW, "Shortage has a forgiving initial buffer")

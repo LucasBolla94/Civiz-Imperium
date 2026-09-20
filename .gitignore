@@ -7,3 +7,6 @@
 /Tests/*.save
 /Tests/*.save.bak
 /Tests/*.save.tmp
+/Tests/runtime/
+/Tests/runtime-portable/
+/Builds/

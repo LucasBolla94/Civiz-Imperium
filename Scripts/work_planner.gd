@@ -22,7 +22,7 @@ func claim_harvest(worker) -> Dictionary:
 	release(worker)
 	var best: Dictionary = {}
 	var best_score := INF
-	for source in game.sources:
+	for source in game.sources + game.gardens:
 		if not source.harvestable(worker.kind): continue
 		var amount: int = mini(game.carry_capacity(), source.remaining - reserved(source))
 		amount = game.automation.allowed_amount(source, amount)

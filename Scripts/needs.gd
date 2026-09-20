@@ -24,7 +24,7 @@ func tick(worker, delta: float) -> bool:
 		worker.status = "Descansando em " + worker.residence.display_name()
 		if p.energy >= data.REST_FINISH: worker.wake(false)
 		return true
-	if worker.state == "to_rest": return false
+	if worker.state == "to_rest" or is_instance_valid(worker.move_destination): return false
 	if p.energy <= data.REST_THRESHOLD and wake_grace <= 0 and not worker.can_finish_delivery():
 		if worker.go_rest(): return false
 		worker.interrupt_task()

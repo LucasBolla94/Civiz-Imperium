@@ -28,9 +28,8 @@ func run() -> void:
 	await click(game.hud.policy_button.get_global_rect().get_center())
 	await settle()
 	check(game.hud.policy_window.visible and game.camera.input_blocked(), "Plan button opens modal and blocks map input")
-	game.hud.population_control.value = 9
 	game.hud.policy_controls.stone.value = 75
-	check(game.automation.population_target == 9 and game.automation.stock_targets.stone == 75, "Plan controls update policies")
+	check(game.automation.stock_targets.stone == 75, "Plan controls update policies")
 	await capture("v004_plans")
 	game.hud.policy_window.hide()
 	var tree = game.sources.filter(func(s): return s.is_tree)[0]
@@ -56,7 +55,7 @@ func run() -> void:
 		report.build(100)
 		game.select_entity(report)
 		await settle()
-		check(game.hud.quarry_button.visible and game.hud.detail_label.text.contains("pedras"), "Survey report shows reserve and opening action")
+		check(game.hud.quarry_button.visible and game.hud.detail_label.text.contains("stone"), "Survey report shows reserve and opening action")
 		await click(game.hud.quarry_button.get_global_rect().get_center())
 		check(report.kind == "quarry" and not report.completed, "Opening button creates excavation work")
 		report.materials.delivered = report.materials.required.duplicate()

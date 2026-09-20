@@ -1,10 +1,19 @@
 extends Control
+const GARDEN = preload("res://Scripts/garden.gd")
 const MENU_THEME = preload("res://Scripts/menu_theme.gd")
 const INK = MENU_THEME.INK
 const MUTED = MENU_THEME.MUTED
 const GOLD = MENU_THEME.ACCENT
 var game
 var stock_label: Label
+var inspection_icon: TextureRect
+var resource_labels := {}
+var garden_button: Button
+var replant_button: Button
+var manual_plant_button: Button
+var demolish_button: Button
+var cancel_work_button: Button
+var cancel_demolish_button: Button
 var objective_label: Label
 var notification_label: Label
 var title_label: Label
@@ -56,6 +65,11 @@ var restart_dialog: ConfirmationDialog
 var workforce_toggle: Button
 var detail_header: HBoxContainer
 var last_context := false
+var game_menu: AcceptDialog
+var menu_save_button: Button
+var menu_quit_button: Button
+var menu_save_status: Label
+var paused_before_menu := false
 
 func scroll_content(parent: Node) -> ScrollContainer:
 	var scroll := ScrollContainer.new()
@@ -75,6 +89,7 @@ func layout_windows() -> void:
 	extinction_panel.reset_size()
 	extinction_panel.position = (viewport - extinction_panel.size) / 2
 	if restart_dialog.visible: restart_dialog.popup_centered()
+	if is_instance_valid(game_menu) and game_menu.visible: game_menu.popup_centered(Vector2i(minf(360,viewport.x-48),220))
 	if is_instance_valid(policy_window) and policy_window.visible: policy_window.popup_centered(Vector2i(minf(520,viewport.x-48),minf(330,viewport.y-48)))
 	objective_label.size = Vector2(364, 20)
 	notification_label.position = Vector2(400, 62)
@@ -95,7 +110,7 @@ func update_context_layout() -> void:
 	detail_label.visible = context
 	bottom_panel.offset_top = -198 if context else -88
 	if is_instance_valid(game.selection) and game.selection.has_method("description") and game.action_mode.is_empty() and game.placement_kind.is_empty():
-		bottom_panel.offset_top = -174 if game.selection.is_tree else -120
+		bottom_panel.offset_top = -198 if game.selection is GARDEN else (-174 if game.selection.is_tree else -120)
 	bottom_panel.offset_bottom = -10
 	var width := minf(1000 if context else 760, get_viewport_rect().size.x - 20)
 	var margin := (get_viewport_rect().size.x - width) / 2
@@ -154,7 +169,25 @@ func _ready() -> void:
 	stock_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	stock_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	top.add_child(stock_label)
+	var resources := HBoxContainer.new()
+	resources.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	resources.alignment = BoxContainer.ALIGNMENT_CENTER
+	top.add_child(resources)
+	resources.add_child(stock_label)
+	stock_label.text = "Disponível"
+	for resource in game.DATA.RESOURCES:
+		var item := HBoxContainer.new()
+		resources.add_child(item)
+		var icon := TextureRect.new()
+		icon.texture = game.DATA.resource_texture(resource)
+		icon.custom_minimum_size = Vector2(32,32)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		item.add_child(icon)
+		var amount := label("0", 13)
+		amount.mouse_filter = Control.MOUSE_FILTER_STOP
+		item.add_child(amount)
+		resource_labels[resource] = {"amount":amount,"icon":icon}
 	pause_button = button("Pausar", func():
 		if not game.settlement.extinct: game.simulation_paused = not game.simulation_paused
 	)
@@ -165,11 +198,12 @@ func _ready() -> void:
 	top.add_child(pause_button)
 	speed_button = button("1x", func(): game.simulation_speed = 2.0 if game.simulation_speed == 1.0 else 1.0)
 	top.add_child(speed_button)
+	top.add_child(get_node("/root/Localization").selector())
 	top.add_child(button("Centrar", game.center_camera))
 	var restart := ConfirmationDialog.new()
 	restart_dialog = restart
 	restart.title = "Recomeçar Civiz Imperium"
-	restart.dialog_text = "Reiniciar a civilização? Esta versão ainda não salva o progresso."
+	restart.dialog_text = "Reiniciar a civilização? O progresso não salvo será perdido."
 	restart.ok_button_text = "Reiniciar"
 	restart.cancel_button_text = "Continuar jogando"
 	restart.confirmed.connect(func(): get_tree().reload_current_scene())
@@ -182,7 +216,7 @@ func _ready() -> void:
 	objective_label.add_theme_color_override("font_shadow_color", Color("253433"))
 	objective_label.add_theme_constant_override("shadow_offset_y", 1)
 	add_child(objective_label)
-	objective_label.tooltip_text = "WASD: mover · Roda: zoom · Home: centrar · Espaço: pausar · Esc: fechar / cancelar"
+	objective_label.tooltip_text = "WASD: mover · Q/E ou roda: zoom · Shift: repetir · Home: centrar · Espaço: pausar · Esc: fechar / cancelar"
 	workforce_panel = panel()
 	workforce_panel.position = Vector2(10, 86)
 	workforce_panel.z_index = 100
@@ -243,6 +277,11 @@ func _ready() -> void:
 	title_label = label("", 16, GOLD)
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail_header.add_child(title_label)
+	inspection_icon = TextureRect.new()
+	inspection_icon.custom_minimum_size = Vector2(32,32)
+	inspection_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	inspection_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	detail_header.add_child(inspection_icon)
 	detail_header.add_child(button("Fechar", func():
 		game.cancel_placement()
 		game.select_entity(null)
@@ -289,15 +328,27 @@ func _ready() -> void:
 	building_actions.add_theme_constant_override("h_separation", 10)
 	building_actions.add_theme_constant_override("v_separation", 8)
 	bottom.add_child(building_actions)
-	recruit_button = button("Atrair colonos\n5 frutas + 3 madeiras", func(): game.immigration.prepare_expedition())
+	recruit_button = button("Atrair colonos\n5 Hortifruti + 3 madeiras", func(): game.immigration.prepare_expedition())
 	building_actions.add_child(recruit_button)
-	plant_button = button("Plantar árvore\n2 frutas", func(): game.begin_action("plant"))
+	plant_button = button("Plantar árvore\n2 Hortifruti", func(): game.begin_action("plant"))
 	building_actions.add_child(plant_button)
-	expand_button = button("Ampliar costa\n10 pedras + 5 madeiras", func(): game.begin_action("expand"))
+	garden_button = button("Criar horta · 10 madeiras", func(): game.begin_action("garden"))
+	building_actions.add_child(garden_button)
+	manual_plant_button = button("Plantar · 2 Hortifruti", func(): game.selection.request_plant())
+	building_actions.add_child(manual_plant_button)
+	replant_button = button("Replantio automático", func(): game.selection.auto_replant = not game.selection.auto_replant)
+	building_actions.add_child(replant_button)
+	demolish_button = button("Demolir · 10s", func(): game.selection.request_demolition())
+	building_actions.add_child(demolish_button)
+	cancel_work_button = button("Cancelar obra", func(): game.cancel_construction(game.selection))
+	building_actions.add_child(cancel_work_button)
+	cancel_demolish_button = button("Cancelar demolição", func(): game.selection.cancel_demolition())
+	building_actions.add_child(cancel_demolish_button)
+	expand_button = button("Ampliar costa\nPincel ajustável", func(): game.begin_action("expand"))
 	building_actions.add_child(expand_button)
 	evolve_button = button("Evoluir vila", func(): game.upgrade_village())
 	building_actions.add_child(evolve_button)
-	aid_button = button("Coleta costeira\n+4 frutas / 60s", func(): game.coastal_aid())
+	aid_button = button("Coleta costeira\n+4 Hortifruti / 60s", func(): game.coastal_aid())
 	building_actions.add_child(aid_button)
 	upgrade_button = button("Melhorar", func(): game.selection.upgrade())
 	building_actions.add_child(upgrade_button)
@@ -316,6 +367,9 @@ func _ready() -> void:
 	for tool in ["axe", "pickaxe"]:
 		for amount in [1, -1]:
 			var order = button(("+1 " if amount > 0 else "−1 ") + game.DATA.RESOURCES[tool].name, func(): game.selection.order_tool(tool, amount))
+			order.icon = game.DATA.resource_texture(tool)
+			order.expand_icon = true
+			order.add_theme_constant_override("icon_max_width", 32)
 			order.tooltip_text = "Encomenda: " + game.DATA.cost_text(game.DATA.RECIPES[tool]) + ". O artesão recebe materiais; trabalhadores retiram ferramentas prontas."
 			building_actions.add_child(order)
 			order_buttons.append(order)
@@ -338,16 +392,8 @@ func _ready() -> void:
 	load_button.reparent(policy_box)
 	policy_button = button("Planos / salvar", func(): policy_window.popup_centered(Vector2i(minf(520,get_viewport_rect().size.x - 48), minf(330,get_viewport_rect().size.y - 48))))
 	building_actions.add_child(policy_button)
-	var population_row := HBoxContainer.new()
-	policy_box.add_child(population_row)
-	population_row.add_child(label("Meta de moradores:", 13))
-	population_control = SpinBox.new()
-	population_control.min_value = 3
-	population_control.max_value = 100
-	population_control.value = game.automation.population_target
-	population_control.value_changed.connect(func(value): game.automation.population_target = int(value))
-	population_row.add_child(population_control)
-	for resource in ["fruit", "wood", "stone"]:
+	policy_box.add_child(label("Mais casas com vagas permitem mais habitantes.", 13))
+	for resource in ["produce", "wood", "stone"]:
 		var row := HBoxContainer.new()
 		policy_box.add_child(row)
 		row.add_child(label("Meta " + game.DATA.RESOURCES[resource].name, 13))
@@ -358,7 +404,7 @@ func _ready() -> void:
 		control.value_changed.connect(func(value): game.automation.stock_targets[resource] = int(value))
 		row.add_child(control)
 		policy_controls[resource] = control
-	var policy_help = label("Metas de estoque: 0 significa sem limite.\nA vila soma a reserva alimentar e os materiais das obras.\nA meta de moradores limita novas chegadas; casas e comida continuam necessárias.", 13)
+	var policy_help = label("Metas de estoque: 0 significa sem limite.\nA vila soma a reserva alimentar e os materiais das obras.\nCasas com vagas permitem novas chegadas; mantenha comida disponível.", 13)
 	policy_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	policy_help.custom_minimum_size.x = 440
 	policy_box.add_child(policy_help)
@@ -387,11 +433,53 @@ func _ready() -> void:
 	add_child(notification_label)
 	create_residents_window()
 	create_extinction_panel()
+	create_game_menu()
 	refresh()
 	for child in building_actions.get_children():
 		if child is Button: child.add_theme_font_size_override("font_size", 13)
 	get_viewport().size_changed.connect(func(): layout_windows.call_deferred())
+	get_node("/root/Localization").language_changed.connect(refresh)
 	layout_windows.call_deferred()
+
+func create_game_menu() -> void:
+	game_menu = AcceptDialog.new()
+	game_menu.title = "Jogo pausado"
+	game_menu.theme = MENU_THEME.create()
+	game_menu.exclusive = true
+	game_menu.get_ok_button().text = "Continuar jogando"
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		game_menu.get_ok_button().add_theme_color_override(state, INK)
+	add_child(game_menu)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 12)
+	game_menu.add_child(content)
+	menu_save_button = button("Salvar jogo", save_from_game_menu)
+	menu_save_button.custom_minimum_size.y = 42
+	content.add_child(menu_save_button)
+	menu_quit_button = button("Fechar jogo", func(): get_tree().quit())
+	menu_quit_button.custom_minimum_size.y = 42
+	content.add_child(menu_quit_button)
+	menu_save_status = label("",13)
+	menu_save_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	menu_save_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(menu_save_status)
+	game_menu.visibility_changed.connect(func():
+		if not game_menu.visible:
+			game.simulation_paused = paused_before_menu or game.settlement.extinct
+			refresh()
+	)
+
+func open_game_menu() -> void:
+	if game_menu.visible: return
+	paused_before_menu = game.simulation_paused
+	game.simulation_paused = true
+	menu_save_status.text = ""
+	refresh()
+	game_menu.popup_centered(Vector2i(minf(360,get_viewport_rect().size.x-48),220))
+
+func save_from_game_menu() -> void:
+	menu_save_status.text = "Partida salva." if game.saves.save_file() else "Não foi possível salvar a partida."
+	get_node("/root/Localization").render(game_menu)
 
 func create_residents_window() -> void:
 	residents_shade = ColorRect.new()
@@ -445,6 +533,7 @@ func open_residents(building) -> void:
 		row.add_child(wake_button)
 		resident_controls[worker] = {"label": description, "wake": wake_button}
 	refresh_residents()
+	get_node("/root/Localization").render(residents_window)
 	layout_windows()
 	residents_window.show()
 	residents_shade.show()
@@ -503,13 +592,16 @@ func refresh() -> void:
 		controls.minus.disabled = count == 0
 		controls.plus.disabled = free_workers == 0 or not is_instance_valid(game.workplace_for(activity))
 		controls.plus.tooltip_text = "Desbloqueia na vila nível 2" if activity == "carrier" and game.village_level < 2 else ("Construa a oficina" if activity == "workshop" and not is_instance_valid(game.workplace_for(activity)) else "Alocar habitante livre")
-	stock_label.text = "Frutas %d   Pedra %d   Madeira %d\nMachados %d   Picaretas %d   Vila %d" % [game.stock.fruit, game.stock.stone, game.stock.wood,game.stock.axe,game.stock.pickaxe,game.village_level]
-	var reserved := 0
-	var carried := 0
-	for delivery in game.logistics.tickets:
-		if not delivery.picked: reserved += delivery.amount
-	for worker in game.workers: carried += worker.cargo
-	stock_label.tooltip_text = "Estoque entregue: %d unidades reservadas para tarefas.\nEm transporte: %d. Reservas não podem ser gastas duas vezes." % [reserved, carried]
+	stock_label.text = "Disponível"
+	var tooltips: PackedStringArray = []
+	for resource in resource_labels:
+		var values: Dictionary = game.resource_breakdown(resource)
+		var info: String = "%s\nDisponível para gastar: %d\nTotal armazenado: %d\nReservado para tarefas: %d\nEm transporte: %d" % [game.DATA.RESOURCES[resource].name,values.available,values.stored,values.reserved,values.carried]
+		resource_labels[resource].amount.text = str(values.available)
+		resource_labels[resource].amount.tooltip_text = info
+		resource_labels[resource].icon.tooltip_text = info
+		tooltips.append(info)
+	stock_label.tooltip_text = "\n\n".join(tooltips)
 	pause_button.text = "Continuar" if game.simulation_paused else "Pausar"
 	pause_button.disabled = game.settlement.extinct
 	speed_button.text = "%dx" % game.simulation_speed
@@ -518,10 +610,30 @@ func refresh() -> void:
 		build_buttons[kind].tooltip_text = "%s\n%s\nMateriais: %s\n%s" % [game.DATA.BUILDINGS[kind].name,game.DATA.BUILDINGS[kind].description,game.DATA.cost_text(game.DATA.BUILDINGS[kind].cost),game.cost_status(game.DATA.BUILDINGS[kind].cost)]
 		build_buttons[kind].set_pressed_no_signal(game.placement_kind == kind)
 	var selected = game.selection
+	inspection_icon.hide()
+	if is_instance_valid(selected) and selected.has_method("wake") and selected.person.tool != "":
+		inspection_icon.texture = game.DATA.resource_texture(selected.person.tool)
+		inspection_icon.show()
 	var is_building: bool = is_instance_valid(selected) and selected.has_method("enqueue")
 	var is_base: bool = is_building and selected.completed and selected.kind == "base"
+	var is_garden: bool = is_instance_valid(selected) and selected is GARDEN
+	garden_button.visible = is_building and selected.kind == "food" and selected.completed and not selected.demolition_requested
+	garden_button.disabled = not game.can_afford(game.DATA.GARDEN_COST)
+	garden_button.tooltip_text = "Cercado: 10 madeiras uma vez. Plantio: 2 Hortifruti por ciclo. 60s; 15 Hortifruti."
+	manual_plant_button.visible = is_garden and selected.phase == "empty"
+	manual_plant_button.disabled = not game.can_afford(game.DATA.PLANT_COST)
+	replant_button.visible = is_garden
+	if is_garden: replant_button.text = "Replantio automático: " + ("ligado" if selected.auto_replant else "desligado")
+	demolish_button.visible = is_building and selected.completed and selected.kind != "base" and not selected.demolition_requested
+	demolish_button.disabled = is_building and selected.upgrading
+	demolish_button.tooltip_text = "Conclua a melhoria antes de demolir." if is_building and selected.upgrading else "Construtor: 10s. Moradores se mudam; estoque fica no chão. Sem reembolso da construção."
+	cancel_work_button.visible = is_building and not selected.completed and selected.kind != "base"
+	cancel_work_button.tooltip_text = "Antes da primeira martelada, materiais entregues ficam no chão; depois, são perdidos. Reservas e cargas em trânsito são preservadas."
+	cancel_demolish_button.visible = is_building and selected.demolition_requested
+	cancel_demolish_button.disabled = is_building and selected.demolition_started
+	cancel_demolish_button.tooltip_text = "Só pode cancelar antes da primeira martelada."
 	construction_menu.visible = not is_building and not (is_instance_valid(selected) and selected.has_method("description"))
-	building_actions.visible = is_building or (is_instance_valid(selected) and (selected.has_method("reserves_ground") or (selected.has_method("description") and selected.is_tree)))
+	building_actions.visible = is_building or is_garden or (is_instance_valid(selected) and (selected.has_method("reserves_ground") or (selected.has_method("description") and selected.is_tree)))
 	recruit_button.visible = is_base
 	recruit_button.disabled = game.immigration.expedition_reason() != ""
 	recruit_button.tooltip_text = game.immigration.expedition_reason()
@@ -531,12 +643,12 @@ func refresh() -> void:
 	aid_button.visible = is_base
 	residents_button.visible = is_building and selected.completed and selected.housing_capacity() > 0
 	upgrade_button.visible = is_building and selected.completed and selected.kind in ["house", "warehouse", "food", "wood", "stone", "workshop"]
-	upgrade_button.disabled = is_building and (selected.level >= 3 or selected.upgrading)
+	upgrade_button.disabled = is_building and (selected.level >= 3 or selected.upgrading or selected.demolition_requested)
 	upgrade_button.text = "Melhorar"
 	if is_building and selected.kind == "workshop": upgrade_button.text = "Liberar metas · nível 2" if selected.level == 1 else ("Reserva automática · nível 3" if selected.level == 2 else "Nível máximo")
 	if is_building and selected.kind == "stone" and selected.level == 1: upgrade_button.text = "Liberar pedreiras · nível 2"
 	upgrade_button.tooltip_text = game.DATA.cost_text(selected.upgrade_cost()) if is_building else ""
-	var workshop: bool = is_building and selected.completed and selected.kind == "workshop"
+	var workshop: bool = is_building and selected.completed and not selected.demolition_requested and selected.kind == "workshop"
 	for order in order_buttons: order.visible = workshop
 	tools_box.visible = workshop and selected.level == 2
 	survey_button.visible = is_building and selected.completed and selected.kind == "stone"
@@ -554,25 +666,37 @@ func refresh() -> void:
 	policy_button.visible = is_base
 	policy_box.visible = true
 	if is_base:
-		population_control.set_value_no_signal(game.automation.population_target)
 		for resource in policy_controls: policy_controls[resource].set_value_no_signal(game.automation.stock_targets[resource])
 	if tools_box.visible:
 		for tool in tools_controls: tools_controls[tool].set_value_no_signal(selected.tool_targets[tool])
 	plant_button.disabled = not game.can_afford(game.DATA.PLANT_COST)
-	expand_button.disabled = not game.can_afford(game.DATA.EXPAND_COST)
-	expand_button.tooltip_text = game.cost_status(game.DATA.EXPAND_COST)
+	expand_button.disabled = not game.can_afford(game.expansion_brush.cost(1))
+	expand_button.tooltip_text = "Ctrl + roda ajusta o pincel; o custo depende apenas da água preenchida."
 	evolve_button.disabled = not game.upgrade_ready()
 	evolve_button.text = "Evoluir vila\nNível %d" % mini(3,game.village_level+1) if game.village_level < 3 else "Vila próspera"
-	evolve_button.tooltip_text = game.DATA.cost_text(game.upgrade_cost()) + " · " + game.cost_status(game.upgrade_cost()) + " · Nível 2 libera transportadores, carga maior e pomares mais produtivos."
+	evolve_button.tooltip_text = game.DATA.cost_text(game.upgrade_cost()) + " · " + game.cost_status(game.upgrade_cost()) + " · Nível 2 libera transportadores, carga maior."
 	aid_button.disabled = game.aid_cooldown > 0
 	aid_button.tooltip_text = "Disponível em %ds" % ceili(game.aid_cooldown)
 	progress.visible = false
 	if not game.action_mode.is_empty() or not game.placement_kind.is_empty():
-		title_label.text = "Plantar árvore" if game.action_mode == "plant" else ("Ampliar a costa" if game.action_mode == "expand" else ("Investigar terreno" if game.action_mode == "survey" else "Construir " + game.DATA.BUILDINGS[game.placement_kind].name))
-		detail_label.text = "Marque no mapa. Materiais serão levados ao local. Esc cancela." if game.preview_valid else game.placement_reason
+		title_label.text = "Criar horta" if game.action_mode == "garden" else ("Plantar árvore" if game.action_mode == "plant" else ("Ampliar a costa" if game.action_mode == "expand" else ("Investigar terreno" if game.action_mode == "survey" else "Construir " + game.DATA.BUILDINGS[game.placement_kind].name)))
+		detail_label.text = "Marque no mapa. Shift repete; Esc cancela. Materiais serão levados ao local." if game.preview_valid else game.placement_reason
+		if not game.placement_kind.is_empty():
+			var size: Vector2i = game.DATA.building_size(game.placement_kind)
+			detail_label.text = "Área: %d × %d células + entrada livre na frente.\n" % [size.x,size.y] + detail_label.text
+		if game.action_mode == "expand":
+			var plan: Dictionary = game.expansion_preview
+			title_label.text = "Aterrar terreno · Pincel %d × %d" % [game.expansion_brush_size,game.expansion_brush_size]
+			var cost: Dictionary = plan.get("cost",{})
+			detail_label.text = "Células: %d · Pedras: %d · Madeiras: %d · Trabalho: %.1fs\nCtrl + roda: tamanho · Shift: repetir · Esc: cancelar" % [plan.get("cells",[]).size(),cost.get("stone",0),cost.get("wood",0),plan.get("seconds",0.0)]
+			if not game.preview_valid: detail_label.text += "\n" + game.placement_reason
 	elif is_building:
 		title_label.text = "%s · nível %d" % [selected.display_name(), selected.level]
-		if selected.needs_work():
+		if selected.demolition_requested:
+			detail_label.text = selected.demolition_status()
+			progress.visible = true
+			progress.value = selected.demolition_progress * 10
+		elif selected.needs_work():
 			detail_label.text = "Entregues: " + selected.materials.text(game.DATA) + (" · Construindo" if selected.materials.ready() else " · Aguardando transporte / materiais")
 			progress.visible = true
 			progress.value = 100 * selected.progress / game.DATA.BUILDINGS[selected.kind].build_seconds
@@ -587,13 +711,18 @@ func refresh() -> void:
 	elif is_instance_valid(selected) and selected.has_method("wake"):
 		title_label.text = ("Rei " if selected.person.is_king else "") + selected.person.display_name
 		detail_label.text = resident_text(selected).replace("\n"," · ")
+	elif is_garden:
+		title_label.text = "Horta 2 × 2"
+		detail_label.text = selected.description()
+		progress.visible = true
+		progress.value = 100.0 * selected.age / game.DATA.GARDEN_GROW_SECONDS if selected.phase == "growing" else (100.0 * selected.remaining / game.DATA.GARDEN_YIELD if selected.phase == "ripe" else 100.0 * selected.progress / selected.work_duration())
 	elif is_instance_valid(selected) and selected.has_method("description"):
 		title_label.text = "Ciclo da árvore" if selected.is_tree else "Jazida de pedra"
 		detail_label.text = selected.description()
 		if selected.is_tree and not selected.removed:
 			progress.visible = true
-			progress.value = 100.0 * selected.age / game.DATA.TREE_SECONDS[selected.stage] if selected.stage < 6 else 100.0 * selected.remaining / game.DATA.SOURCE_STOCK.wood
-			progress.tooltip_text = "Evolução até o próximo estágio" if selected.stage < 6 else "Madeira restante para coleta"
+			progress.value = 100.0 * selected.age / game.DATA.TREE_SECONDS[selected.stage] if selected.stage < 4 else 100.0 * selected.remaining / (game.DATA.SOURCE_STOCK.produce if selected.stage == 4 else game.DATA.SOURCE_STOCK.wood)
+		progress.tooltip_text = "Evolução até o próximo estágio" if selected.stage < 4 else "Estoque restante para coleta"
 	elif is_instance_valid(selected) and selected.has_method("needs_work"):
 		title_label.text = {"plant": "Plantio", "expand": "Expansão costeira", "survey": "Investigação de jazida", "quarry": "Abertura de pedreira"}[selected.kind]
 		detail_label.text = ("Reserva %s: %d pedras. Abrir consome materiais e trabalho." % ["pequena" if selected.deposit == 300 else ("média" if selected.deposit == 600 else "grande"), selected.deposit]) if report else selected.materials.text(game.DATA)
@@ -603,7 +732,7 @@ func refresh() -> void:
 	else:
 		title_label.text = "Uma pequena comunidade. Um futuro império."
 		detail_label.text = "Construa casas para receber colonos. Renove os pomares e distribua o trabalho. O Rei também participa da vida da vila."
-	notification_label.text = game.message if game.message_time > 0 else "WASD mover · Roda zoom · Home centrar · Espaço pausar"
+	notification_label.text = game.message if game.message_time > 0 else "WASD mover · Q/E zoom · Shift repetir · Home centrar · Espaço pausar"
 	update_context_layout()
 	if residents_window.visible: refresh_residents()
 	if game.settlement.extinct and not extinct_shown:
@@ -613,3 +742,4 @@ func refresh() -> void:
 		extinction_panel.reset_size()
 		extinction_panel.position = (get_viewport_rect().size - extinction_panel.size) / 2
 		extinction_panel.show()
+	get_node("/root/Localization").render(self)

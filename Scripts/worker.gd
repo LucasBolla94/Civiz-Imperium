@@ -2,10 +2,12 @@ extends Node2D
 
 const VISUAL = preload("res://Scripts/resident_visual.gd")
 const WORLD_JOB = preload("res://Scripts/world_job.gd")
+const GARDEN_JOB = preload("res://Scripts/garden.gd")
 const NEEDS = preload("res://Scripts/needs.gd")
 var person
 var needs = NEEDS.new()
 var residence = null
+var move_destination = null
 var selected := false
 var ticket: Dictionary = {}
 var cargo_resource := ""
@@ -48,6 +50,18 @@ func refresh_appearance() -> void:
 	visual.configure(person.appearance_id)
 	visual.crown.visible = person.is_king
 	visual.update_crown()
+
+func process_move(delta: float) -> void:
+	if not is_instance_valid(move_destination): return
+	status = "Mudando para " + move_destination.display_name()
+	if game.world_cell(position) == move_destination.door() and path.is_empty():
+		residence = move_destination
+		person.residence_id = residence.entity_id
+		move_destination = null
+		apply_assignment()
+		return
+	if path.is_empty(): path = game.route_to_cell(position, move_destination.door())
+	if not path.is_empty(): move_along_path(delta)
 
 func assign_to(activity: String, workplace) -> void:
 	if assignment == activity and assigned_home == workplace: return
@@ -122,6 +136,9 @@ func _process(delta: float) -> void:
 	repath_delay = maxf(0, repath_delay - delta)
 	if needs.tick(self, delta):
 		queue_redraw()
+		return
+	if is_instance_valid(move_destination):
+		process_move(delta)
 		return
 	if state == "to_source" and not game.work_planner.available_claim(self):
 		interrupt_task()
@@ -330,16 +347,16 @@ func find_job() -> void:
 	if find_tool(): return
 	if kind == "food" and game.settlement.food_units() < game.workers.size() * game.DATA.FOOD_RESERVE_PER_PERSON:
 		if take_harvest():
-			status = "Buscando frutas — reserva alimentar baixa"
+			status = "Buscando Hortifruti — reserva alimentar baixa"
 			return
 	if kind in ["builder", "food", "stone"]:
 		var best = null
 		var best_route: PackedVector2Array = []
 		var shortest := INF
 		var best_priority := -1
-		for job in game.jobs + game.buildings:
+		for job in game.jobs + game.buildings + game.gardens:
 			if not job.needs_work() or not job.materials.ready(): continue
-			var activity: String = job.activity if job is WORLD_JOB else "builder"
+			var activity: String = job.activity if job is WORLD_JOB or job is GARDEN_JOB else "builder"
 			if activity != kind or (is_instance_valid(job.reserved_by) and job.reserved_by != self): continue
 			var route: PackedVector2Array = game.route_to_cell(position, job.door())
 			if route.is_empty(): continue
@@ -358,6 +375,13 @@ func find_job() -> void:
 			return
 	if kind == "workshop":
 		home = assigned_home
+		if home.kind != "workshop" or home.demolition_requested:
+			var replacement = game.workplace_for("workshop")
+			if replacement == null:
+				status = "Aguardando oficina disponível"
+				return
+			assigned_home = replacement
+			home = replacement
 		if home.can_craft() and not is_instance_valid(home.craft_reserved_by):
 			path = game.route_to_cell(position, home.door())
 			if not path.is_empty():
@@ -374,8 +398,8 @@ func find_job() -> void:
 		return
 	# A gatherer helps supply its own planting, not unrelated village deliveries.
 	if kind in ["food", "stone"]:
-		for job in game.jobs:
-			if job.activity == kind and not job.completed and not job.materials.ready():
+		for job in game.jobs + game.gardens:
+			if job.activity == kind and job.needs_work() and not job.materials.ready():
 				if take_logistics(job): return
 	take_harvest()
 
@@ -393,7 +417,7 @@ func take_harvest() -> bool:
 		timer = 0
 		return true
 	else:
-		var productive: bool = game.sources.any(func(source): return source.harvestable(kind))
+		var productive: bool = (game.sources + game.gardens).any(func(source): return source.harvestable(kind))
 		var resource: String = game.DATA.resource_for_activity(kind)
 		var at_target: bool = game.automation.total_committed(resource) >= game.automation.production_limit(resource)
 		status = "Meta de estoque atendida — produção pausada" if at_target else ("Postos ocupados ou sem acesso — aguardando" if productive else "Sem fonte disponível — aguarde o ciclo ou plante")

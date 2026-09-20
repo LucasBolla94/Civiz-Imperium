@@ -21,10 +21,44 @@ var crafting := ""
 var craft_reserved_by = null
 var tool_orders := {"axe": 0, "pickaxe": 0}
 var priority := 1
+var work_started := false
+var demolition_requested := false
+var demolition_started := false
+var demolition_progress := 0.0
+
+func request_demolition() -> bool:
+	if kind == "base" or not completed or upgrading or demolition_requested: return false
+	demolition_requested = true
+	materials = MATERIALS.new()
+	game.detach_building_tasks(self, false)
+	game.settlement.tick_moves()
+	if is_instance_valid(game.hud): game.hud.refresh()
+	return true
+
+func cancel_demolition() -> bool:
+	if not demolition_requested or demolition_started: return false
+	demolition_requested = false
+	game.settlement.cancel_moves(self)
+	game.detach_building_tasks(self, false)
+	if is_instance_valid(game.hud): game.hud.refresh()
+	return true
+
+func demolition_ready() -> bool:
+	return demolition_requested and game.settlement.residents(self).is_empty()
+
+func demolition_status() -> String:
+	var occupants: Array = game.settlement.residents(self)
+	if not occupants.is_empty():
+		if occupants.any(func(w): return is_instance_valid(w.move_destination)): return "Moradores em mudança"
+		return "Precisamos de moradia para %d pessoas" % occupants.size()
+	if demolition_started: return "Demolindo · %.1f/10s" % demolition_progress
+	if game.route_to_cell(game.cell_center(game.base.door()), door()).is_empty(): return "Demolição aguardando acesso"
+	return "Demolição aguardando construtor"
 
 func setup(controller, building_kind: String, cell: Vector2i, ready_now := false) -> void:
 	game = controller
-	entity_id = game.buildings.size() + 1
+	entity_id = 1
+	for existing in game.buildings: entity_id = maxi(entity_id, existing.entity_id + 1)
 	kind = building_kind
 	origin = cell
 	stored = game.DATA.empty_stock()
@@ -58,7 +92,7 @@ func used() -> int:
 	for resource in stored: total += stored[resource]
 	return total
 func accepts(resource: String) -> bool:
-	if not completed or capacity() == 0: return false
+	if not completed or demolition_requested or capacity() == 0: return false
 	if kind in ["base", "warehouse"]: return true
 	if kind == "workshop": return resource in ["axe", "pickaxe"]
 	return game.DATA.resource_for_activity(kind) == resource
@@ -66,11 +100,12 @@ func store(resource: String, amount: int) -> int:
 	var accepted := mini(amount, maxi(0, capacity() - used()))
 	stored[resource] = stored.get(resource, 0) + accepted
 	return accepted
-func needs_work() -> bool: return not completed or upgrading
+func needs_work() -> bool:
+	return demolition_ready() if demolition_requested else (not completed or upgrading)
 func enqueue() -> bool: return game.immigration.prepare_expedition() if kind == "base" and completed else false
 
 func upgrade() -> bool:
-	if not completed or upgrading or level >= game.DATA.MAX_BUILDING_LEVEL or kind not in ["house", "warehouse", "food", "wood", "stone", "workshop"]: return false
+	if not completed or upgrading or demolition_requested or level >= game.DATA.MAX_BUILDING_LEVEL or kind not in ["house", "warehouse", "food", "wood", "stone", "workshop"]: return false
 	materials = MATERIALS.new()
 	materials.required = upgrade_cost()
 	upgrading = true
@@ -79,7 +114,14 @@ func upgrade() -> bool:
 	return true
 
 func build(delta: float) -> void:
-	if not needs_work() or not materials.ready(): return
+	if delta <= 0 or not needs_work() or not materials.ready(): return
+	if demolition_requested:
+		demolition_started = true
+		demolition_progress += delta
+		if demolition_progress >= game.DATA.DEMOLITION_SECONDS: game.remove_building(self, false)
+		queue_redraw()
+		return
+	work_started = true
 	progress += delta
 	if progress >= game.DATA.BUILDINGS[kind].build_seconds:
 		if upgrading: level += 1
@@ -96,7 +138,7 @@ func upgrade_cost() -> Dictionary:
 	return (game.DATA.HOUSE_UPGRADE_COST if kind == "house" else game.DATA.STORAGE_UPGRADE_COST).duplicate()
 
 func order_tool(tool: String, amount := 1) -> void:
-	if kind == "workshop" and completed and game.DATA.RECIPES.has(tool):
+	if kind == "workshop" and completed and not demolition_requested and game.DATA.RECIPES.has(tool):
 		tool_orders[tool] = clampi(tool_orders[tool] + amount, 0, 20)
 
 func desired_tools(tool: String) -> int:
@@ -115,14 +157,14 @@ func tool_demand(tool: String) -> int:
 	return maxi(0, desired_tools(tool) - projected)
 
 func input_demand(resource: String) -> int:
-	if kind != "workshop" or not completed or upgrading: return 0
+	if kind != "workshop" or not completed or upgrading or demolition_requested: return 0
 	var need := 0
 	for tool in tool_targets:
 		need += game.DATA.RECIPES[tool].get(resource, 0) * mini(2, tool_demand(tool))
 	return maxi(0, need - stored.get(resource, 0))
 
 func next_recipe() -> String:
-	if kind != "workshop" or not completed or upgrading: return ""
+	if kind != "workshop" or not completed or upgrading or demolition_requested: return ""
 	for tool in tool_targets:
 		if tool_demand(tool) <= 0: continue
 		var sufficient := true
@@ -139,6 +181,7 @@ func workshop_status() -> String:
 	return "%s · %s · Fila: %d machados, %d picaretas · Prontos aqui: %d / %d · Aloque Oficina em Habitantes." % [mode, work, tool_orders.axe, tool_orders.pickaxe, stored.axe, stored.pickaxe]
 
 func can_craft() -> bool:
+	if demolition_requested: return false
 	if crafting != "": return craft_progress < game.DATA.CRAFT_SECONDS or game.logistics.storage_free(self) > 0
 	return next_recipe() != ""
 
@@ -166,11 +209,11 @@ func _draw() -> void:
 	draw_circle(Vector2(0, -2), 3, color)
 	if needs_work():
 		draw_rect(Rect2(-20, -10, 40, 5), Color("233334"))
-		draw_rect(Rect2(-20, -10, 40 * minf(progress / game.DATA.BUILDINGS[kind].build_seconds, 1.0), 5), color)
+		var fraction: float = demolition_progress / game.DATA.DEMOLITION_SECONDS if demolition_requested else progress / game.DATA.BUILDINGS[kind].build_seconds
+		draw_rect(Rect2(-20, -10, 40 * minf(fraction, 1.0), 5), color)
 	elif capacity() > 0:
 		draw_rect(Rect2(-16, 3, 32, 2), Color("233334"))
 		draw_rect(Rect2(-16, 3, 32 * float(used()) / capacity(), 2), color)
-
 
 
 

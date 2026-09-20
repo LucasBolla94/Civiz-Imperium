@@ -9,9 +9,8 @@ var departure := Vector2.ZERO
 var arrivals := 0
 
 func blocked_reason() -> String:
-	if game.workers.size() >= game.automation.population_target: return "Meta de população atingida"
 	if game.workers.size() >= game.population_limit(): return "Precisa de uma vaga em casa concluída"
-	if game.settlement.food_units() < (game.workers.size() + 1) * game.DATA.FOOD_RESERVE_PER_PERSON: return "Falta reserva de frutas para mais um morador"
+	if game.settlement.food_units() < (game.workers.size() + 1) * game.DATA.FOOD_RESERVE_PER_PERSON: return "Falta reserva de Hortifruti para mais um morador"
 	if not game.settlement.healthy_for_arrival(): return "Aguardando todos os habitantes se alimentarem"
 	return ""
 
@@ -19,7 +18,7 @@ func expedition_reason() -> String:
 	if expedition or sailing: return "Já existe uma viagem em andamento"
 	if blocked_reason() != "": return blocked_reason()
 	if not game.can_afford(game.DATA.EXPEDITION_COST): return game.cost_status(game.DATA.EXPEDITION_COST)
-	if game.settlement.food_units() - game.DATA.EXPEDITION_COST.fruit < (game.workers.size() + 1) * game.DATA.FOOD_RESERVE_PER_PERSON: return "Reserve mais frutas antes de abastecer a expedição"
+	if game.settlement.food_units() - game.DATA.EXPEDITION_COST.produce < (game.workers.size() + 1) * game.DATA.FOOD_RESERVE_PER_PERSON: return "Reserve mais Hortifruti antes de abastecer a expedição"
 	return ""
 
 func prepare_expedition() -> bool:
@@ -30,9 +29,9 @@ func prepare_expedition() -> bool:
 		game.notify("Uma viagem já está sendo preparada.")
 		return false
 	if not game.settlement.healthy_for_arrival():
-		game.notify("Colonos precisam de moradia livre, população alimentada e reservas de frutas.")
+		game.notify("Colonos precisam de moradia livre, população alimentada e reservas de Hortifruti.")
 		return false
-	if game.settlement.food_units() - game.DATA.EXPEDITION_COST.fruit < (game.workers.size() + 1) * game.DATA.FOOD_RESERVE_PER_PERSON:
+	if game.settlement.food_units() - game.DATA.EXPEDITION_COST.produce < (game.workers.size() + 1) * game.DATA.FOOD_RESERVE_PER_PERSON:
 		game.notify("Guarde comida suficiente para a população após abastecer a expedição.")
 		return false
 	if not game.pay(game.DATA.EXPEDITION_COST):
@@ -107,4 +106,3 @@ func _draw() -> void:
 	draw_rect(Rect2(-1,-25,2,25),Color("67412e"))
 	for row in range(10): draw_rect(Rect2(1,-24 + row * 2,2 + row * 2,2),Color("f2ddb2"))
 	draw_rect(Rect2(-7,-9,4,6),Color("c68c68"))
-

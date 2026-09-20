@@ -59,10 +59,10 @@ func setup_tree(controller, cell: Vector2i, initial_stage := 0) -> void:
 	set_stage(initial_stage)
 
 func set_stage(value: int) -> void:
-	stage = value
+	stage = 6 if value == 5 else value
 	age = 0
-	resource_kind = "fruit" if stage == 4 else ("wood" if stage == 6 else "")
-	remaining = (game.DATA.SOURCE_STOCK.fruit + (20 if game.village_level >= 2 else 0)) if stage == 4 else (game.DATA.SOURCE_STOCK.wood if stage == 6 else 0)
+	resource_kind = "produce" if stage == 4 else ("wood" if stage == 6 else "")
+	remaining = game.DATA.SOURCE_STOCK.produce if stage == 4 else (game.DATA.SOURCE_STOCK.wood if stage == 6 else 0)
 	tree_sprite.texture = game.DATA.CATALOG.entry("Tree-%d" % (stage + 1)).texture
 	# Sort at the trunk's ground contact, keeping the artwork at its original location.
 	position = Vector2(origin * 16) + Vector2(24,56)
@@ -70,10 +70,12 @@ func set_stage(value: int) -> void:
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	if not is_tree or removed or stage == 6 or game.simulation_paused: return
+	if not is_tree or removed or stage >= 4 or game.simulation_paused: return
 	age += delta * game.simulation_speed
-	if age >= game.DATA.TREE_SECONDS[stage]:
+	while stage < 4 and age >= game.DATA.TREE_SECONDS[stage]:
+		var overflow: float = age - game.DATA.TREE_SECONDS[stage]
 		set_stage(stage + 1)
+		age = overflow if stage < 4 else 0.0
 	queue_redraw()
 
 func blocks_ground() -> bool:
@@ -100,6 +102,9 @@ func take(amount: int, expected_kind := "") -> int:
 	if removed or (expected_kind != "" and game.DATA.resource_for_activity(expected_kind) != resource_kind): return 0
 	var harvested := mini(amount, remaining)
 	remaining -= harvested
+	if is_tree and stage == 4 and remaining == 0:
+		set_stage(6)
+		return harvested
 	if remaining == 0 and (not is_tree or stage == 6):
 		removed = true
 		terrain_visual.hide()
@@ -111,11 +116,11 @@ func take(amount: int, expected_kind := "") -> int:
 func description() -> String:
 	if removed: return "Recurso esgotado; espaço liberado."
 	if not is_tree: return ("Pedreira aberta: " if is_quarry else "Jazida: ") + "%d pedras restantes." % remaining
-	var text: String = "Estágio %d/7: %s" % [stage + 1, game.DATA.TREE_NAMES[stage]]
-	if stage < 6: text += " · próximo estágio em %ds" % ceili(game.DATA.TREE_SECONDS[stage] - age)
-	if stage == 4: text += " · %d frutas restantes" % remaining
-	elif stage < 4: text += " · Frutas: ainda não produz"
-	else: text += " · Frutas: 0"
+	var text: String = game.DATA.TREE_NAMES[stage]
+	if stage < 4: text += " · próximo estágio em %ds" % ceili(game.DATA.TREE_SECONDS[stage] - age)
+	if stage == 4: text += " · %d Hortifruti restantes · corte após esgotar a colheita" % remaining
+	elif stage < 4: text += " · Hortifruti: ainda não produz"
+	else: text += " · Hortifruti: 0"
 	if stage == 6: text += " · %d madeiras · somente lenhadores" % remaining
 	return text
 

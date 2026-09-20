@@ -20,7 +20,7 @@ func register(worker) -> void:
 func assign_residence(worker) -> bool:
 	if is_instance_valid(worker.residence): return true
 	for building in game.buildings:
-		if building.completed and building.housing_capacity() > residents(building).size():
+		if building.completed and not building.demolition_requested and building.housing_capacity() > reserved_residents(building):
 			worker.residence = building
 			worker.person.residence_id = building.entity_id
 			return true
@@ -32,8 +32,48 @@ func residents(building) -> Array:
 func population_limit() -> int:
 	var amount := 0
 	for building in game.buildings:
-		if building.completed: amount += building.housing_capacity()
+		if building.completed:
+			amount += residents(building).size() if building.demolition_requested else building.housing_capacity()
+	for worker in game.workers:
+		if is_instance_valid(worker.move_destination): amount -= 1
 	return amount
+
+func reserved_residents(building) -> int:
+	return residents(building).size() + game.workers.filter(func(w): return w.move_destination == building and w.residence != building).size()
+
+func cancel_moves(building) -> void:
+	for worker in residents(building):
+		if is_instance_valid(worker.move_destination):
+			worker.move_destination = null
+			worker.interrupt_task()
+			worker.apply_assignment()
+
+func tick_moves() -> void:
+	for building in game.buildings:
+		if not building.demolition_requested: continue
+		var occupants := residents(building)
+		# Revalidate targets; no slot is usable twice by moves or immigration.
+		for worker in occupants:
+			var destination = worker.move_destination
+			if is_instance_valid(destination) and (destination.demolition_requested or not destination.completed or game.route_to_cell(worker.position, destination.door()).is_empty()):
+				worker.move_destination = null
+				worker.interrupt_task()
+		var waiting := occupants.filter(func(w): return not is_instance_valid(w.move_destination))
+		var proposals := {}
+		for worker in waiting:
+			for destination in game.buildings:
+				if destination == building or not destination.completed or destination.demolition_requested: continue
+				var booked: int = proposals.values().count(destination)
+				if destination.housing_capacity() <= reserved_residents(destination) + booked: continue
+				if game.route_to_cell(worker.position, destination.door()).is_empty(): continue
+				proposals[worker] = destination
+				break
+		if proposals.size() != waiting.size(): continue
+		for worker in proposals:
+			if worker.state == "resting": worker.wake(false)
+			worker.interrupt_task()
+			worker.move_destination = proposals[worker]
+			worker.state = "moving_home"
 
 func food_units() -> int:
 	var count := 0
@@ -42,7 +82,6 @@ func food_units() -> int:
 	return count
 
 func healthy_for_arrival() -> bool:
-	if game.workers.size() >= game.automation.population_target: return false
 	if extinct or game.workers.is_empty() or game.workers.size() >= population_limit(): return false
 	if food_units() < (game.workers.size() + 1) * game.DATA.FOOD_RESERVE_PER_PERSON: return false
 	return game.workers.all(func(w): return w.person.nutrition > game.DATA.HUNGER_SLOW)

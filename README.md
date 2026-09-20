@@ -10,36 +10,55 @@ Decisões não tomadas ficam explicitamente pendentes; não são autorização p
 
 O documento de assets permanece separado e recebe somente pedidos de arte a criar ou adaptar, com contexto completo para a outra IA. Não adicionar fichas de reutilização ou itens “sem arte nova”: essas decisões ficam no plano do jogo. Se não houver encomendas, manter apenas o cabeçalho do documento de assets. Manter versões anteriores como histórico e atualizar o estado de entrega nos dois documentos. Não criar um terceiro plano de versão para substituir ou fragmentar esse par.
 
-Próxima versão em discussão: [plano V0.0.5](PLANO_V0.0.5.md) e [assets V0.0.5](ASSETS_V0.0.5.md).
+## V0.0.5 — Hortas e uma vila em crescimento
 
-Jogo 2D de construção e gestão de uma civilização em pixel art. Versão atual: **V0.0.4 — A vila ganha autonomia**.
+Versão atual: **0.0.5**. Escopo e entrega: [PLANO_V0.0.5.md](PLANO_V0.0.5.md) e [ASSETS_V0.0.5.md](ASSETS_V0.0.5.md). Revisão compartilhada **43**. Planejamento posterior separado na V0.0.5.1.
 
-Abra `project.godot` no Godot 4.7 e pressione F5 para entrar no menu principal.
+**Construir na expansão:** espere o aterro terminar. A moradia precisa de 5×4 células livres e uma entrada frontal acessível; use o pincel para ampliar/preencher água e transporte materiais soltos que ocupem o local. A prévia mostra tamanho, obstáculos e entrada. Não há limite fixo de moradias.
 
-Janela adaptável: na execução independente, o jogo escolhe um tamanho de até **1920 × 1080**, preservando a proporção e respeitando a área útil do monitor, bordas e barra de tarefas. Mudanças de monitor ou da área disponível são verificadas durante a execução; redimensionamentos manuais são respeitados. Dentro do Godot, o editor controla a janela e a configuração inicial segura é **1280 × 720**, evitando o corte causado por forçar 1920 × 1200. A interface usa uma referência de 1280 × 720, adapta-se à proporção da janela e permanece fixa ao mover a câmera. Menus reorganizam seus botões; listas usam rolagem; janelas de habitantes e fim de partida permanecem centralizadas ao redimensionar. Esc fecha a lista de habitantes.
+**Arrumar o terreno:** abra Vila → Ampliar costa e segure **Ctrl enquanto gira a roda do mouse** para ajustar o pincel de 1×1 a 9×9. Pode passar sobre terra existente: somente a água destacada será aterrada e cobrada. A prévia mostra materiais e tempo; Shift permite repetir. O construtor leva os materiais e conclui o aterro. Funciona também nos buracos de ilhas já salvas. Uma célula custa 2 pedras + 1 madeira; nove células custam 10 pedras + 5 madeiras. Reparos parciais e pincéis de outros tamanhos não criam jazidas automáticas.
 
-A câmera começa com zoom leve de 10% sobre o enquadramento da área livre entre os painéis. Use **WASD** ou o botão do meio do mouse para mover, a roda para zoom e **Home / Centrar** para retornar à visão inicial. O movimento funciona durante a pausa e não acelera com a velocidade da simulação. Janelas abertas bloqueiam os comandos do mapa.
+Jazidas descobertas por **Investigar terreno** agora exibem o asset Stone original, inclusive durante a abertura da pedreira. Investigações já salvas também recebem a correção.
 
-O HUD compacto reserva mais de 70% da tela para o mapa na visão inicial. A barra de construção tem 78 pixels de altura na referência de 1280 × 720; os detalhes só abrem ao selecionar uma entidade ou iniciar uma ação. **Habitantes**, no topo, abre a distribuição de profissões com todos os controles visíveis; **Vila** abre as ações da base. **Fechar** recolhe os detalhes, e **Esc** também fecha a distribuição de trabalho. As barras usam largura limitada e a câmera não muda de zoom ao abrir esses painéis.
+Correção visual de 20/09/2026: Hortifruti redesenhado em 32×32/16×16 com transparência real; corrigida a textura que virava quadrado branco nas pilhas. Trabalhadores aparecem inteiros acima das hortas e podem atravessar todas as suas células. Compatível com saves V0.0.5 existentes; reinicie o jogo usando o pacote atualizado.
 
-O começo é um Rei, dois trabalhadores e uma base. Cuide de alimentação, moradia e energia; construa depósitos e oficina; receba colonos por barco; evolua para transporte especializado e produção automática. As árvores, o plantio, a expansão costeira e os três níveis da vila continuam integrados.
+Para jogar no Windows, extraia `Builds/Civiz-Imperium-V0.0.5-Windows.zip` e abra `Civiz Imperium V0.0.5.exe`. Mantenha o `.pck` na mesma pasta. A pasta já extraída também está em `Builds/Civiz-Imperium-V0.0.5`. Para editar, abra `project.godot` no Godot 4.7.2 e pressione F5.
 
-- Novidades, controles e balanceamento atual: [PLANO_V0.0.4.md](PLANO_V0.0.4.md)
-- Guia histórico, arquitetura e validação: [PLANO_V0.0.3.md](PLANO_V0.0.3.md)
-- Revisão de inteligência dos trabalhadores: [MELHORIAS_IA.md](MELHORIAS_IA.md)
-- Testes novos: `Tests/test_v004.gd` e `Tests/test_v004_ui.gd`.
-- Regressões: `Tests/test_v003.gd`, `Tests/test_v003_ui.gd` `Tests/playthrough_v003.gd` e `Tests/test_worker_ai.gd`.
-- Capturas da versão: `Tests/v003_*.png`.
-- Interface adaptável: `Tests/test_responsive_ui.gd`, com menu inicial, 12 resoluções de 640 × 360 a 3840 × 2160, incluindo ultrawide e orientação vertical, redimensionamento com janela aberta, câmera, confirmação de reinício e rolagem de uma população grande. Capturas: `Tests/responsive_720_*.png`.
+Você começa com um Rei e dois trabalhadores. **Casas concluídas com vagas permitem mais habitantes, sem o antigo limite de sete pessoas.** Mantenha reservas de comida e aguarde os barcos, ou abasteça uma expedição. Construção, Comida, Madeira, Pedra, Oficina e Transporte usam os mesmos habitantes, com profissões, experiência, ferramentas, fome, energia e descanso.
 
-Esta versão salva o progresso manualmente em **Vila → Planos / salvar**, e automaticamente a cada dois minutos enquanto a simulação roda. Use **Continuar civilização** no menu inicial para retomar. Documentos/testes V0.0.1 e V0.0.2 são históricos. Famílias e economia monetária são planos futuros, não funcionalidades atuais.
+- Selecione um depósito de comida concluído e use **Create garden / Criar horta**. Cada canteiro ocupa 2×2 células e aceita hortas adjacentes. Um construtor instala o cercado: 10 madeiras e 10 segundos de trabalho, uma vez. O trabalhador de Comida planta por 2 Hortifruti e 4 segundos; depois de 60 segundos de crescimento há 15 unidades para colher fisicamente. Selecione a horta para ligar replantio automático ou plantar manualmente um canteiro vazio.
+- Árvores crescem por 180 segundos e produzem exatamente 50 Hortifruti. Permanecem produtivas até esgotar a colheita; só então podem ser cortadas para madeira. Sem envelhecimento automático da produção nem copa branca. Horta e árvore abastecem **Produce / Hortifruti**.
+- **Demolish / Demolir** solicita 10 segundos-base de trabalho a um construtor. Casas aguardam vagas e mudança física dos moradores antes de liberar a demolição. A base principal é protegida. Estoque do prédio removido fica em pilhas recuperáveis; materiais usados para construir não são reembolsados.
+- **Cancel construction / Cancelar obra** preserva materiais entregues no chão antes da primeira martelada; depois dela, esses materiais são perdidos. Reservas e cargas em trânsito são preservadas. A demolição só pode ser cancelada antes de começar. Melhorias em andamento precisam terminar antes de demolir.
+- A barra mostra somente **recursos disponíveis para gastar**. Passe o mouse em cada recurso para conferir disponível, armazenado, reservado e em transporte. Pilhas no chão e materiais entregues a obras não são dinheiro disponível.
+- Interface e mensagens em **English / Português**, selecionáveis no menu e durante a partida. Preferência salva separadamente; nomes próprios e estado da vila não mudam.
 
-Os habitantes usam `char-1`, `char-2` e `char-3`, com aparência fixa por identidade. Parados, andando e trabalhando usam as animações correspondentes; as demais sequências fornecidas estão registradas para futuras ações de combate e movimento. Os sprites mantêm os quadros nativos de 32 × 32 e filtro sem suavização.
+### Controles
 
-A coroa está em `Assets/Characters/Accessories/king_crown.svg`: pixel art de 10 × 6, com posição ajustada por quadro e espelhamento junto à cabeça. A sucessão conserva a aparência do novo Rei e transfere a coroa imediatamente. Validação específica: `Tests/test_resident_visuals.gd`; prancha ampliada dos três personagens para ambos os lados: `Tests/resident_crowns.png`.
+**Q/E têm zoom suave:** um toque aproxima/afasta gradualmente; segurar ajusta continuamente. Funciona durante a pausa, sem movimentar a câmera por trás de janelas ou campos de texto. A roda mantém seu comportamento e Ctrl + roda ajusta o pincel de expansão.
 
+**Esc** fecha os painéis e cancela a seleção/colocação atual. Com tudo fechado, Esc abre **Salvar jogo / Fechar jogo / Continuar jogando**. A partida fica pausada enquanto o menu está aberto. Esc, X ou Continuar devolvem ao estado anterior de pausa. Salvar mostra a confirmação na janela; Fechar jogo encerra o aplicativo.
 
+WASD move a câmera; botão do meio arrasta. **E aproxima, Q afasta**, e a roda continua funcionando. **Shift + clique** mantém a colocação para repetir prédios, hortas e expansões. Cada clique válido cria um pedido; Esc ou botão direito cancela o modo. Home/Centrar retorna à vista inicial; Espaço pausa. Modais e campos de texto bloqueiam atalhos do mapa. A câmera permanece disponível durante a pausa.
 
-O teste `Tests/test_window_layout.gd` valida os limites físicos e a proporção da janela em seis configurações de monitor, incluindo coordenadas negativas em múltiplos monitores. A escala lógica mantém o layout estável em telas menores; em 640 × 360 os textos também ficam menores.
+Habitantes abre a distribuição de trabalho. Vila abre expansão, evolução, expedição e planos. Salve em **Vila → Planos / salvar**; há salvamento automático a cada dois minutos de execução ativa. Continue pelo menu inicial.
 
-Árvores: a área visual/reservada continua impedindo construções sobre a copa, mas a navegação bloqueia somente o quadrado de 16 × 16 do tronco. Coleta e busca de acesso usam os vizinhos desse quadrado. A profundidade visual usa a base do tronco; os habitantes passam atrás da copa. A madeira restante também bloqueia somente o tronco, liberado ao esgotar. Teste: Tests/test_tree_ground.gd; captura: Tests/tree_ground.png.
+### Salvamento e compatibilidade
+
+Esta versão usa `user://civilization_v005.save`, com cópia `.bak`. Saves V0.0.4 permanecem em `civilization_v004.save` e não são convertidos: comece uma nova partida na V0.0.5. O carregamento preserva estoques, cargas, materiais de obras, demolição, mudanças de residência e ciclos das hortas/árvores. A preferência de idioma fica em `language.cfg`.
+
+### Arte e interface
+
+Sprites existentes de solo, cenoura/repolho, cercas, ferramentas, madeira e pedra foram reaproveitados por recortes 16×16, sem alterar as folhas originais. Novas composições de Hortifruti: ícone 32×32 e pilha 16×16 RGBA. Nearest, sem suavização; pivô das pilhas (8,12). Personagens preservam quadros 32×32, identidade visual, animações e coroa. O tronco bloqueia apenas sua célula; a copa reserva área de construção.
+
+Interface adaptável, rolagem em listas/painéis, referência de 1280×720 e janela ajustada à área útil do monitor. O pacote Windows inclui o binário local Godot 4.7.2 para executar o `.pck` sem instalação; por conter também o editor, é maior que uma exportação release otimizada. Avisos do motor estão junto ao pacote.
+
+### Validação
+
+Testes de regras: `Tests/test_v005.gd` (68), `Tests/test_v005_edges.gd` (19). Teste de cliques e idiomas: `Tests/test_v005_ui.gd` (72). Regressões atualizadas para as regras aprovadas: V003 (72), V004 (44), IA (31), UI V004 (16), interface adaptável (460). Todos passaram. O pacote Windows foi testado independentemente com assets, horta, idioma e save/load. Capturas: `Tests/v005_*.png`.
+
+Para executar uma suíte: `godot --headless --path . --script res://Tests/test_v005.gd`. Para capturas reais, execute a suíte de UI sem `--headless`. Arquivos V001/V002 e planos anteriores são históricos.
+
+Famílias, comércio, dinheiro, outras ilhas, animais, pesca, refeições, água, sementes e estações permanecem fora desta versão.
+
+Planejamento das novas atualizações e correções: [PLANO_V0.0.5.1.md](PLANO_V0.0.5.1.md) e [ASSETS_V0.0.5.1.md](ASSETS_V0.0.5.1.md). Proposta em discussão, sem mudança da versão executável.

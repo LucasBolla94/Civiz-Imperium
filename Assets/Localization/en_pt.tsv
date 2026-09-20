@@ -1,0 +1,331 @@
+Uma ilha. Três pessoas. O começo de um reino.\n\nAlimente, construa e cuide de quem faz a vila viver.	One island. Three people. The beginning of a kingdom.\n\nFeed, build and care for the people who bring your village to life.
+V0.0.5  ·  HORTAS E UMA VILA EM CRESCIMENTO\nSalve pela Vila · Salvamento automático a cada 2 minutos.	V0.0.5  ·  GARDENS AND A GROWING VILLAGE\nSave from Village · Autosave every 2 minutes.
+Fundar uma civilização	Found a civilization
+Continuar civilização	Continue civilization
+Sair	Quit
+Jogo pausado	Game paused
+Salvar jogo	Save game
+Fechar jogo	Quit game
+Há água sob a construção. Aterre toda a área de %d × %d células.	There is water under the building. Fill the entire %d × %d cell area.
+Este terreno está ocupado por um prédio, recurso ou obra.	This land is occupied by a building, resource or construction.
+Área: %d × %d células + entrada livre na frente.\n	Area: %d × %d cells + a clear entrance in front.\n
+Ampliar costa\nPincel ajustável	Expand coast\nAdjustable brush
+Ctrl + roda ajusta o pincel; o custo depende apenas da água preenchida.	Ctrl + wheel adjusts the brush; cost depends only on water filled.
+Ctrl + roda ajusta o pincel; Shift repete; Esc cancela. Só a água será aterrada.	Ctrl + wheel adjusts the brush; Shift repeats; Esc cancels. Only water will be filled.
+Não há água para preencher neste pincel.	There is no water to fill under this brush.
+Já existe uma obra neste trecho de água.	There is already construction on this water area.
+Cada trecho de água precisa de uma margem acessível pela vila.	Each water area needs a shore accessible from the village.
+Aterrar terreno · Pincel %d × %d	Fill terrain · Brush %d × %d
+Células: %d · Pedras: %d · Madeiras: %d · Trabalho: %.1fs\nCtrl + roda: tamanho · Shift: repetir · Esc: cancelar	Cells: %d · Stone: %d · Wood: %d · Work: %.1fs\nCtrl + wheel: size · Shift: repeat · Esc: cancel
+Uma pequena comunidade. Um futuro império.	A small community. A future empire.
+Um Rei e dois trabalhadores. Replante pomares, construa moradias e cuide da alimentação.	A King and two workers. Replant orchards, build homes and keep everyone fed.
+Construa casas para receber colonos. Renove os pomares e distribua o trabalho. O Rei também participa da vida da vila.	Build homes for settlers. Renew orchards and assign work. The King also helps the village.
+%s\nDisponível para gastar: %d\nTotal armazenado: %d\nReservado para tarefas: %d\nEm transporte: %d	%s\nAvailable to spend: %d\nTotal stored: %d\nReserved for tasks: %d\nIn transit: %d
+%s%s · %s · XP %.0f\nEnergia %d%% · Alimentação %d%% · %s\n%s · %s	%s%s · %s · XP %.0f\nEnergy %d%% · Nutrition %d%% · %s\n%s · %s
+%s · %s · Fila: %d machados, %d picaretas · Prontos aqui: %d / %d · Aloque Oficina em Habitantes.	%s · %s · Queue: %d axes, %d pickaxes · Ready here: %d / %d · Assign Workshop workers in Residents.
+%d/%d moradores · %d livres · %d em casa	%d/%d residents · %d free · %d at home
+%d/%d moradores · %d dentro, descansando. 	%d/%d residents · %d resting indoors. 
+%s\n%s\nMateriais: %s\n%s	%s\n%s\nMaterials: %s\n%s
+%s · nível %d	%s · level %d
+%d pedras restantes.	%d stone remaining.
+Reiniciar a civilização? O progresso não salvo será perdido.	Restart the civilization? Unsaved progress will be lost.
+Recomeçar Civiz Imperium	Restart Civiz Imperium
+Continuar jogando	Keep playing
+Reiniciar	Restart
+Pausar	Pause
+Continuar	Resume
+Centrar	Center
+Habitantes	Residents
+Vila: expandir / evoluir	Village: expand / advance
+Vila	Village
+WASD: mover · Q/E ou roda: zoom · Shift: repetir · Home: centrar · Espaço: pausar · Esc: fechar / cancelar	WASD: move · Q/E or wheel: zoom · Shift: repeat · Home: center · Space: pause · Esc: close / cancel
+WASD mover · Q/E zoom · Shift repetir · Home centrar · Espaço pausar	WASD move · Q/E zoom · Shift repeat · Home center · Space pause
+DISTRIBUIR TRABALHO	ASSIGN WORK
+Conhecer habitantes	Meet residents
+HABITANTES E RESIDÊNCIAS	RESIDENTS AND HOMES
+CIVILIZAÇÃO EXTINTA	CIVILIZATION EXTINCT
+Nenhum habitante sobreviveu.\nUma nova ilha espera por outro começo.	No residents survived.\nA new island awaits a fresh start.
+Começar novamente	Start again
+Menu principal	Main menu
+Fechar	Close
+CONSTRUIR	BUILD
+Atrair colonos\n5 Hortifruti + 3 madeiras	Attract settlers\n5 Produce + 3 wood
+Plantar árvore\n2 Hortifruti	Plant tree\n2 Produce
+Ampliar costa\n10 pedras + 5 madeiras	Expand coast\n10 stone + 5 wood
+Coleta costeira\n+4 Hortifruti / 60s	Coastal forage\n+4 Produce / 60s
+Evoluir vila\nNível %d	Advance village\nLevel %d
+Moradores / descanso	Residents / rest
+Investigar terreno	Survey land
+Abrir pedreira · 10 madeiras + 5 pedras	Open quarry · 10 wood + 5 stone
+Liberar terreno	Release land
+Renovar pomar	Renew orchard
+Renovação do pomar: 	Orchard renewal: 
+Prioridade: 	Priority: 
+Prioridade	Priority
+Salvar partida	Save game
+Carregar partida	Load game
+Planos e progresso da vila	Village plans and progress
+Planos / salvar	Plans / save
+Mais casas com vagas permitem mais habitantes.	More vacant homes allow more residents.
+0 = sem limite. Obras e reserva alimentar são somadas automaticamente.	0 = unlimited. Construction and food reserves are added automatically.
+Metas de estoque: 0 significa sem limite.\nA vila soma a reserva alimentar e os materiais das obras.\nCasas com vagas permitem novas chegadas; mantenha comida disponível.	Stock targets: 0 means unlimited.\nThe village adds food reserves and construction materials.\nVacant homes allow new arrivals; keep food available.
+Meta 	Target 
+Manter em estoque:	Keep in stock:
+Acordar	Wake up
+Sem residência	No home
+Sem ferramenta equipada	No tool equipped
+Habitante falecido	Deceased resident
+Desbloqueia na vila nível 2	Unlocks at village level 2
+Construa a oficina	Build a workshop
+Alocar habitante livre	Assign a free resident
+Disponível	Available
+Liberar metas · nível 2	Unlock targets · level 2
+Reserva automática · nível 3	Automatic reserve · level 3
+Nível máximo	Maximum level
+Liberar pedreiras · nível 2	Unlock quarries · level 2
+Requer depósito de pedra nível 2; aloque um mineiro.	Requires a level 2 stone depot; assign a miner.
+Evoluir vila	Advance village
+Vila próspera	Prosperous village
+ · Nível 2 libera transportadores, carga maior.	 · Level 2 unlocks carriers and larger loads.
+Disponível em %ds	Available in %ds
+Plantar árvore	Plant tree
+Ampliar a costa	Expand coast
+Construir 	Build 
+Marque no mapa. Shift repete; Esc cancela. Materiais serão levados ao local.	Choose a location. Shift repeats; Esc cancels. Materials will be delivered there.
+Entregues: 	Delivered: 
+ · Construindo	 · Building
+ · Aguardando transporte / materiais	 · Awaiting transport / materials
+. Estoque %d/%d.	. Storage %d/%d.
+Espaço disponível	Space available
+Cheio	Full
+Rei 	King 
+Ciclo da árvore	Tree cycle
+Jazida de pedra	Stone deposit
+Evolução até o próximo estágio	Growth to next stage
+Estoque restante para coleta	Stock left to gather
+Expansão costeira	Coastal expansion
+Investigação de jazida	Deposit survey
+Abertura de pedreira	Quarry opening
+Reserva %s: %d pedras. Abrir consome materiais e trabalho.	%s reserve: %d stone. Opening requires materials and work.
+Materiais aguardando transporte	Materials awaiting transport
+Encomenda: 	Order: 
+. O artesão recebe materiais; trabalhadores retiram ferramentas prontas.	. The crafter receives materials; workers collect finished tools.
+Criar horta · 10 madeiras	Create garden · 10 wood
+Criar horta	Create garden
+Plantar · 2 Hortifruti	Plant · 2 Produce
+Replantio automático: 	Auto-replant: 
+Replantio automático	Auto-replant
+Demolir · 10s	Demolish · 10s
+Cancelar demolição	Cancel demolition
+Cancelar obra	Cancel construction
+Cercado: 10 madeiras uma vez. Plantio: 2 Hortifruti por ciclo. 60s; 15 Hortifruti.	Fence: 10 wood once. Planting: 2 Produce per cycle. 60s; 15 Produce.
+Conclua a melhoria antes de demolir.	Finish the upgrade before demolition.
+Construtor: 10s. Moradores se mudam; estoque fica no chão. Sem reembolso da construção.	Builder: 10s. Residents relocate; stored goods stay on the ground. No construction refund.
+Antes da primeira martelada, materiais entregues ficam no chão; depois, são perdidos. Reservas e cargas em trânsito são preservadas.	Before the first hammer strike, delivered materials stay on the ground; afterwards they are lost. Reservations and cargo in transit are preserved.
+Só pode cancelar antes da primeira martelada.	Can only cancel before the first hammer strike.
+Horta 2 × 2	Garden 2 × 2
+Horta crescendo · %ds para colher	Garden growing · harvest in %ds
+Horta pronta · %d Hortifruti para colher	Garden ready · %d Produce to harvest
+Canteiro vazio · Plantar: 2 Hortifruti	Empty plot · Plant: 2 Produce
+Cercado: 	Fence: 
+Plantio: 	Planting: 
+ · Construtor · 10s	 · Builder · 10s
+ · Comida · 4s	 · Food worker · 4s
+ · Aguardando reserva alimentar	 · Awaiting food reserve
+Moradores em mudança	Residents relocating
+Precisamos de moradia para %d pessoas	Housing needed for %d residents
+Demolindo · %.1f/10s	Demolishing · %.1f/10s
+Demolição aguardando acesso	Demolition awaiting access
+Demolição aguardando construtor	Demolition awaiting builder
+Obra cancelada.	Construction cancelled.
+Demolição concluída. Estoque preservado no chão.	Demolition complete. Stored goods preserved on the ground.
+Mudando para 	Moving to 
+Aguardando oficina disponível	Awaiting an available workshop
+Marque uma horta 2 × 2. Cercado: 10 madeiras; plantio: 2 Hortifruti.	Place a 2 × 2 garden. Fence: 10 wood; planting: 2 Produce.
+A horta exige terra livre e acessível.	Gardens require clear, accessible land.
+Este terreno já está ocupado.	This land is already occupied.
+Construção	Construction
+Construções	Buildings
+Construtor	Builder
+Comida	Food
+Coletor de comida	Food gatherer
+Coletor de pedra	Stone gatherer
+Coletor	Gatherer
+Mineiro	Miner
+Lenhador	Lumberjack
+Transportador	Carrier
+Transporte	Transport
+Artesão	Crafter
+Trabalhador	Worker
+Livres	Free
+Residência para quatro habitantes. Pode ser melhorada.	Home for four residents. Can be upgraded.
+Oficina de ferramentas	Tool workshop
+Encomende ferramentas. Melhorias liberam metas e reserva automática.	Order tools. Upgrades unlock targets and automatic reserves.
+Depósito geral	Warehouse
+Armazena até 200 unidades. Pode ser melhorado.	Stores up to 200 units. Can be upgraded.
+Depósito de madeira	Wood depot
+Lenhadores cortam apenas árvores no último estágio.	Lumberjacks only cut trees after all Produce has been harvested.
+Base principal	Main base
+Abrigo dos fundadores, reserva coletiva e expedições para atrair colonos.	Founders' shelter, shared reserves and expeditions to attract settlers.
+Depósito de Hortifruti	Food depot
+Organiza a coleta de Hortifruti e armazena as entregas.	Organizes Produce gathering and stores deliveries.
+Depósito de pedra	Stone depot
+Armazena pedra. No nível 2, libera investigação e pedreiras.	Stores stone. Level 2 unlocks surveys and quarries.
+Moradia	Housing
+Morador	Resident
+Casa	House
+Depósito	Depot
+Oficina	Workshop
+Hortifruti	Produce
+madeiras	wood
+pedras	stone
+machados	axes
+picaretas	pickaxes
+Madeira: pronta para corte	Wood: ready to cut
+Madeira	Wood
+Pedra	Stone
+Broto	Sprout
+Muda	Sapling
+Árvore jovem	Young tree
+Árvore adulta	Adult tree
+Frutificação	Fruiting
+Envelhecendo	Aging
+Melhoria solicitada: materiais serão entregues fisicamente.	Upgrade requested: materials will be physically delivered.
+ concluída!	 complete!
+Encomendas manuais	Manual orders
+Reposição por metas da vila	Replenish village targets
+Reserva conforme trabalhadores	Reserve based on workers
+Produzindo ferramentas	Crafting tools
+Produzindo 	Crafting 
+Aguardando encomenda / meta	Awaiting order / target
+Aguardando artesão	Awaiting crafter
+Aguardando madeira / pedra	Awaiting wood / stone
+Fonte esgotada. O espaço está livre para novas construções ou plantio.	Source exhausted. The space is free for building or planting.
+Recurso esgotado; espaço liberado.	Resource exhausted; space cleared.
+Pedreira aberta: 	Open quarry: 
+Jazida: 	Deposit: 
+ · próximo estágio em %ds	 · next stage in %ds
+ · %d Hortifruti restantes · corte após esgotar a colheita	 · %d Produce left · cut after the harvest is exhausted
+ · Hortifruti: ainda não produz	 · Produce: not ready yet
+ · Hortifruti: 0	 · Produce: 0
+ · %d madeiras · somente lenhadores	 · %d wood · lumberjacks only
+Pedreira marcada: entregue materiais e aloque um mineiro.	Quarry marked: deliver materials and assign a miner.
+Não foi possível salvar a partida.	Could not save the game.
+Partida salva.	Game saved.
+Nenhuma partida salva.	No saved game.
+Partida restaurada. Os habitantes reorganizam suas tarefas.	Game restored. Residents are reorganizing their tasks.
+Arquivo de partida inválido. A vila atual foi preservada.	Invalid save file. The current village was preserved.
+Civilização extinta — nenhum habitante sobreviveu.	Civilization extinct — no residents survived.
+%s morreu de fome.	%s died of starvation.
+%s assume a coroa. A civilização continua.	%s takes the crown. The civilization continues.
+Procurando trabalho	Looking for work
+Concluindo entrega antes de trocar de função	Finishing delivery before changing assignment
+Sem residência — construa uma casa	No home — build a house
+Caminho para residência bloqueado	Path home blocked
+Indo descansar em 	Going to rest at 
+Descansando em 	Resting at 
+: Eu ainda estava dormindo...	: I was still sleeping...
+Fonte indisponível — escolhendo outro trabalho	Source unavailable — choosing another task
+Investigando terreno	Surveying land
+Abrindo pedreira	Opening quarry
+Construindo	Building
+Coletando	Gathering
+Sem ferramenta — trabalhando devagar	No tool — working slowly
+: minha ferramenta quebrou; vou procurar outra.	: my tool broke; I'll look for another.
+Levando 	Carrying 
+Metas atendidas ou aguardando insumos	Targets met or awaiting inputs
+Contornando passagem bloqueada	Routing around blocked passage
+Passagem bloqueada — aguardando acesso	Passage blocked — waiting for access
+Sem acesso — tarefa liberada para outra tentativa	No access — task released for another attempt
+Buscando ferramenta no estoque mais próximo	Fetching a tool from the nearest storage
+Buscando Hortifruti — reserva alimentar baixa	Gathering Produce — low food reserves
+Buscando 	Fetching 
+Indo construir	Going to build
+Investigando / abrindo pedreira	Surveying / opening quarry
+Indo plantar	Going to plant
+Indo trabalhar na oficina	Going to work at the workshop
+Bancada ocupada — aguardando	Workbench occupied — waiting
+Oficina cheia — aguardando retirada	Workshop full — waiting for pickup
+Oficina abastecida; aguardando demanda ou insumos	Workshop supplied; awaiting demand or inputs
+Aguardando materiais / trabalho	Awaiting materials / work
+Livre — disponível para transporte	Free — available for transport
+Depósitos cheios — aguardando espaço	Storage full — waiting for space
+Indo coletar em posto reservado	Going to gather at a reserved work spot
+Meta de estoque atendida — produção pausada	Stock target met — production paused
+Postos ocupados ou sem acesso — aguardando	Work spots occupied or inaccessible — waiting
+Sem fonte disponível — aguarde o ciclo ou plante	No source available — wait for growth or plant
+Depósitos cheios — carga preservada no chão	Storage full — cargo preserved on the ground
+Entregando em depósito com espaço reservado	Delivering to storage with reserved space
+Preciso comer — fraco demais para trabalhar	I need food — too weak to work
+Marque um terreno livre para plantar.	Choose clear land for planting.
+Marque terra livre 3 × 3 para investigar.	Mark a clear 3 × 3 area to survey.
+Marque um bloco de mar 3 × 3 junto à costa.	Mark a 3 × 3 sea block beside the coast.
+Melhore um depósito de pedra para o nível 2.	Upgrade a stone depot to level 2.
+Construa um depósito de comida.	Build a food depot.
+Limite da região desta versão.	Region boundary for this version.
+Plantio exige terra livre; expansão exige um bloco inteiramente no mar.	Planting needs clear land; expansion needs a block entirely in the sea.
+Este espaço já pertence a uma árvore ou recurso.	This space already belongs to a tree or resource.
+Há materiais aguardando transporte neste terreno.	Materials are awaiting transport on this land.
+Precisa de acesso por terra junto à costa ou ao plantio.	Needs land access beside the coast or planting site.
+Este pomar bloquearia a circulação.	This orchard would block passage.
+Plantio marcado: aloque um trabalhador em Comida.	Planting marked: assign a Food worker.
+Investigação marcada: aloque um mineiro.	Survey marked: assign a miner.
+Aterro marcado: aloque um construtor.	Landfill marked: assign a builder.
+Investigação concluída: %d pedras. Selecione a área para abrir a pedreira.	Survey complete: %d stone. Select the area to open a quarry.
+Pedreira aberta. Mineiros extraem e transportam a pedra.	Quarry opened. Miners extract and transport stone.
+Muda plantada. Acompanhe os estágios clicando na árvore.	Sapling planted. Click the tree to follow its growth.
+Território ampliado!	Territory expanded!
+ Uma jazida de 120 pedras foi descoberta.	 A deposit of 120 stone was discovered.
+ Mais espaço para sua vila.	 More space for your village.
+A vila já atingiu o nível máximo desta versão.	The village has reached the maximum level for this version.
+Vila nível %d! Moradia: %d habitantes. Transporte especializado liberado; carga 7.	Village level %d! Housing: %d residents. Specialized transport unlocked; load 7.
+Reserva da base cheia. Libere espaço ou amplie depósitos.	Base storage full. Free some space or expand storage.
+Coleta costeira: +%d Hortifruti. Disponível novamente em 60s.	Coastal forage: +%d Produce. Available again in 60s.
+Evolução disponível! Abra Vila: expandir / evoluir para chegar ao nível %d.	Advancement available! Open Village: expand / advance to reach level %d.
+Abasteça a vila: Hortifruti %d/10 · pedra %d/10	Supply the village: Produce %d/10 · stone %d/10
+Vila próspera! Continue expandindo e renovando seus pomares.	Prosperous village! Keep expanding and renewing your orchards.
+Sugestão: renove os pomares e amplie a costa. Evolução: 	Tip: renew orchards and expand the coast. Advancement: 
+Recursos disponíveis	Resources available
+Falta: 	Missing: 
+Conclua o prédio desta atividade antes de alocar trabalhadores.	Complete this activity's building before assigning workers.
+Sem trabalhadores livres. Reduza outra atividade ou atraia colonos.	No free workers. Reduce another activity or attract settlers.
+Não há trabalhadores nesta atividade.	There are no workers in this activity.
+Distribuição atualizada. Quem já está entregando termina a viagem antes de trocar de função.	Assignments updated. Residents making deliveries finish the trip before changing activity.
+Escolha terreno livre, longe da água, recursos e prédios.	Choose clear land away from water, resources and buildings.
+Não construa sobre uma árvore ou recurso.	Do not build over a tree or resource.
+Não bloqueie a entrada de uma obra.	Do not block a work site's entrance.
+A entrada precisa de um quadrado livre na frente.	The entrance needs a clear cell in front.
+Não bloqueie a entrada de outro prédio.	Do not block another building's entrance.
+Há um habitante neste local.	There is a resident here.
+Este local bloquearia a passagem dos habitantes.	This location would block residents' passage.
+Este local impediria o acesso a um recurso.	This location would block access to a resource.
+Obra marcada. Materiais serão transportados antes do trabalho do construtor.	Construction marked. Materials will be delivered before the builder starts work.
+Escolha onde construir. Verde = permitido. Esc ou botão direito cancela.	Choose where to build. Green = allowed. Esc or right-click cancels.
+Objetivo concluído! Sua vila já coleta e entrega comida e pedra automaticamente.	Objective complete! Your village now gathers and delivers food and stone automatically.
+Precisa de uma vaga em casa concluída	Needs a vacancy in a completed home
+Falta reserva de Hortifruti para mais um morador	Needs a Produce reserve for another resident
+Aguardando todos os habitantes se alimentarem	Waiting for all residents to be fed
+Já existe uma viagem em andamento	A trip is already in progress
+Reserve mais Hortifruti antes de abastecer a expedição	Reserve more Produce before supplying the expedition
+Uma viagem já está sendo preparada.	A trip is already being prepared.
+Colonos precisam de moradia livre, população alimentada e reservas de Hortifruti.	Settlers need vacant housing, a fed population and Produce reserves.
+Guarde comida suficiente para a população após abastecer a expedição.	Keep enough food for the population after supplying the expedition.
+Expedição abastecida. Um barco poderá chegar após a preparação.	Expedition supplied. A boat may arrive after preparations.
+%s desembarcou e recebeu residência em %s.	%s landed and was assigned a home at %s.
+Um barco de colonos se aproxima da ilha!	A settlers' boat is approaching the island!
+Barco aguardando moradia / comida / acesso	Boat awaiting housing / food / access
+Barco chegando em %ds	Boat arriving in %ds
+Possível chegada	Possible arrival
+Expedição	Expedition
+Plantio	Planting
+Melhorar	Upgrade
+baixa	low
+normal	normal
+urgente	urgent
+ligada	on
+desligada	off
+ligado	on
+desligado	off
+pequena	small
+média	medium
+grande	large

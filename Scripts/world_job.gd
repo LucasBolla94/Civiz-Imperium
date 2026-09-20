@@ -15,6 +15,16 @@ var duration := 4.0
 var priority := 1
 var deposit := 0
 var released := false
+var brush_size := 3
+var discovery_eligible := true # Legacy 3x3 expansion orders retain their behavior.
+
+func setup_expansion(controller, cell: Vector2i, size: int, plan: Dictionary) -> void:
+	setup(controller,"expand",cell,plan.entry)
+	brush_size = size
+	cells.assign(plan.cells)
+	materials.required = plan.cost.duplicate()
+	duration = plan.seconds
+	discovery_eligible = plan.discovery
 func reserves_ground() -> bool: return not completed or (kind == "survey" and not released)
 func open_quarry() -> bool:
 	if kind != "survey" or not completed or released: return false
@@ -57,9 +67,21 @@ func build(delta: float) -> void:
 	queue_redraw()
 func _draw() -> void:
 	if completed and (kind != "survey" or released): return
+	if kind == "expand":
+		for cell in cells:
+			var rect := Rect2(Vector2((cell-origin)*16),Vector2(16,16))
+			draw_rect(rect,Color(0.91,0.75,0.47,0.25))
+			draw_rect(rect,Color("e8be78"),false,0.5)
+			if selected: draw_rect(rect,Color("f3dc9b"),false,1)
+		# Progress stays on a water cell even when the brush origin lies on land.
+		if not cells.is_empty(): draw_rect(Rect2(Vector2((cells[0]-origin)*16)+Vector2(1,12),Vector2(14*progress/duration,2)),Color("e8be78"))
+		return
 	var size := Vector2(48,64 if kind == "plant" else 48)
 	var color := Color("a6d887") if kind == "plant" else Color("e8be78")
 	draw_rect(Rect2(Vector2.ZERO,size), Color(color,0.25))
 	draw_rect(Rect2(Vector2.ZERO,size), color, false,1)
-	draw_rect(Rect2(4,size.y - 5,40 * progress / duration,3),color)
-
+	# A surveyed deposit is visible before excavation, using the existing native art.
+	if (kind == "survey" and completed) or kind == "quarry":
+		var stone: Texture2D = game.DATA.CATALOG.entry("Stone").texture
+		draw_texture(stone, (size - stone.get_size()) / 2.0)
+	if not completed: draw_rect(Rect2(4,size.y - 5,40 * progress / duration,3),color)

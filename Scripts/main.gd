@@ -18,7 +18,12 @@ var settlement = SETTLEMENT.new()
 var logistics = LOGISTICS.new()
 var immigration
 var jobs: Array = []
+var gardens: Array = []
+const GARDEN = preload("res://Scripts/garden.gd")
 var action_mode := ""
+var expansion_brush = preload("res://Scripts/expansion_brush.gd").new()
+var expansion_brush_size := 3
+var expansion_preview: Dictionary = {}
 var planted_count := 0
 var expansion_count := 0
 var village_level := 1
@@ -29,7 +34,7 @@ var shore_atlas: Dictionary = {}
 var aid_cooldown := 0.0
 const CARDINALS = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
 @export var initial_base_cell := Vector2i(48, 24)
-@export var initial_fruit_cell := Vector2i(64, 27)
+@export var initial_produce_cell := Vector2i(64, 27)
 @export var initial_stone_cell := Vector2i(55, 33)
 var stock: Dictionary:
 	get:
@@ -44,7 +49,7 @@ var stock: Dictionary:
 		if is_instance_valid(base):
 			for resource in value: base.store(resource, value[resource])
 var base
-var total_delivered := {"fruit": 0, "stone": 0, "wood": 0}
+var total_delivered := {"produce": 0, "stone": 0, "wood": 0}
 var buildings: Array = []
 var workers: Array = []
 var sources: Array = []
@@ -74,6 +79,7 @@ func _ready() -> void:
 	saves.game = self
 	work_planner.game = self
 	logistics.game = self
+	expansion_brush.game = self
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	land = $Water/TileMapLayer
 	initial_bounds = land.get_used_rect()
@@ -86,6 +92,8 @@ func _ready() -> void:
 		shore_atlas[sample] = land.get_cell_atlas_coords(coordinates[sample])
 	entities = Node2D.new()
 	entities.name = "Simulation"
+	# Ground decorations stay at terrain depth; actors keep their Y sorting above.
+	entities.z_index = 1
 	entities.y_sort_enabled = true
 	add_child(entities)
 	# Examples are the visual catalog; world only supplies terrain and water.
@@ -96,7 +104,7 @@ func _ready() -> void:
 		source.setup(self, layer, layer.get_used_cells(), definition.kind)
 		sources.append(source)
 		layer.free()
-	spawn_tree(initial_fruit_cell, 4)
+	spawn_tree(initial_produce_cell, 4)
 	spawn_tree(Vector2i(66,34), 6)
 	var starting_house = add_building("base", initial_base_cell, true)
 	base = starting_house
@@ -173,9 +181,110 @@ func spawn_tree(cell: Vector2i, stage := 0):
 
 func population_limit() -> int: return settlement.population_limit()
 
+func can_place_garden(cell: Vector2i) -> bool:
+	placement_reason = ""
+	if not buildings.any(func(b): return b.kind == "food" and b.completed and not b.demolition_requested):
+		placement_reason = "Construa um depósito de comida."
+		return false
+	if not can_afford(DATA.GARDEN_COST):
+		placement_reason = cost_status(DATA.GARDEN_COST)
+		return false
+	var rect := Rect2i(cell, Vector2i(2,2))
+	for y in range(2):
+		for x in range(2):
+			if not is_walkable(cell + Vector2i(x,y)):
+				placement_reason = "A horta exige terra livre e acessível."
+				return false
+	for source in sources + gardens:
+		if not source.removed and source.cells.any(func(c): return rect.has_point(c)):
+			placement_reason = "Este terreno já está ocupado."
+			return false
+	for job in jobs:
+		if job.reserves_ground() and (job.cells.any(func(c): return rect.has_point(c)) or rect.has_point(job.door())):
+			placement_reason = "Não bloqueie a entrada de uma obra."
+			return false
+	for building in buildings:
+		if rect.has_point(building.door()):
+			placement_reason = "Não bloqueie a entrada de outro prédio."
+			return false
+	for pile in logistics.piles:
+		if rect.has_point(pile.cell):
+			placement_reason = "Há materiais aguardando transporte neste terreno."
+			return false
+	if route_to_cell(cell_center(base.door()), cell).is_empty():
+		placement_reason = "A horta exige terra livre e acessível."
+		return false
+	return true
+
+func cancel_construction(building) -> bool:
+	if not buildings.has(building) or building.completed or building.kind == "base": return false
+	remove_building(building, true)
+	return true
+
+func detach_building_tasks(building, removing: bool) -> void:
+	for worker in workers:
+		var references_ticket: bool = not worker.ticket.is_empty() and (worker.ticket.source == building or worker.ticket.destination == building)
+		if worker.target == building or references_ticket or (worker.home == building and worker.state in ["to_craft", "crafting", "to_home"]):
+			worker.interrupt_task()
+		if removing:
+			if worker.home == building: worker.home = base
+			if worker.assigned_home == building:
+				worker.assigned_home = workplace_for(worker.assignment)
+				if worker.assigned_home == null: worker.assigned_home = base
+				worker.home = worker.assigned_home
+			if worker.move_destination == building: worker.move_destination = null
+	for ticket in logistics.tickets.duplicate():
+		if ticket.source == building or ticket.destination == building: logistics.tickets.erase(ticket)
+	building.reserved_by = null
+	building.craft_reserved_by = null
+
+func remove_building(building, cancelled: bool) -> void:
+	if building == base or not buildings.has(building): return
+	if not cancelled and (not building.demolition_started or not settlement.residents(building).is_empty()): return
+	var salvage: Dictionary = building.stored.duplicate()
+	if cancelled and not building.work_started:
+		for resource in building.materials.delivered:
+			salvage[resource] = salvage.get(resource, 0) + building.materials.delivered[resource]
+	if building.crafting != "":
+		if building.craft_progress >= DATA.CRAFT_SECONDS:
+			salvage[building.crafting] = salvage.get(building.crafting, 0) + 1
+		else:
+			for resource in DATA.RECIPES[building.crafting]:
+				salvage[resource] = salvage.get(resource, 0) + DATA.RECIPES[building.crafting][resource]
+	buildings.erase(building)
+	detach_building_tasks(building, true)
+	if selection == building: select_entity(null)
+	if hud.residence_filter == building: hud.close_residents(); hud.residence_filter = null
+	building.stored = DATA.empty_stock()
+	rebuild_navigation()
+	# Separate resources spatially so every pile remains selectable and accessible.
+	var spots: Array[Vector2i] = building.footprint()
+	spots.append(building.door())
+	var index := 0
+	for resource in salvage:
+		if salvage[resource] <= 0: continue
+		logistics.drop(spots[index % spots.size()], resource, salvage[resource])
+		index += 1
+	building.queue_free()
+	notify("Obra cancelada." if cancelled else "Demolição concluída. Estoque preservado no chão.")
+
 func carry_capacity() -> int: return 5 if village_level == 1 else 7
 
 func begin_action(mode: String) -> void:
+	if mode == "expand":
+		placement_kind = ""
+		action_mode = mode
+		select_entity(null)
+		update_expansion_preview()
+		notify("Ctrl + roda ajusta o pincel; Shift repete; Esc cancela. Só a água será aterrada.")
+		return
+	if mode == "garden":
+		if not buildings.any(func(b): return b.kind == "food" and b.completed and not b.demolition_requested): return
+		placement_kind = ""
+		action_mode = mode
+		preview_check_time = 0
+		notify("Marque uma horta 2 × 2. Cercado: 10 madeiras; plantio: 2 Hortifruti.")
+		return
 	if mode not in ["plant", "expand", "survey"]: return
 	var cost: Dictionary = DATA.PLANT_COST if mode == "plant" else ({} if mode == "survey" else DATA.EXPAND_COST)
 	if not can_afford(cost):
@@ -196,6 +305,11 @@ func job_entry(cell: Vector2i, height: int) -> Vector2i:
 	return Vector2i(-999,-999)
 
 func can_place_job(mode: String, cell: Vector2i) -> bool:
+	if mode == "expand":
+		expansion_preview = expansion_brush.inspect(cell,expansion_brush_size)
+		placement_reason = expansion_preview.reason
+		return placement_reason.is_empty()
+	if mode == "garden": return can_place_garden(cell)
 	placement_reason = ""
 	var planting := mode != "expand"
 	if mode == "survey" and not buildings.any(func(b): return b.kind == "stone" and b.completed and b.level >= 2):
@@ -221,7 +335,7 @@ func can_place_job(mode: String, cell: Vector2i) -> bool:
 				return false
 			for job in jobs:
 				if job.reserves_ground() and job.cells.has(spot): return false
-	for source in sources:
+	for source in sources + gardens:
 		if not source.removed and source.cells.any(func(spot): return rect.has_point(spot)):
 			placement_reason = "Este espaço já pertence a uma árvore ou recurso."
 			return false
@@ -257,17 +371,26 @@ func can_place_job(mode: String, cell: Vector2i) -> bool:
 			return false
 	return true
 
-func place_job(mode: String, cell: Vector2i, automatic := false):
+func place_job(mode: String, cell: Vector2i, automatic := false, repeat := false):
 	if not can_place_job(mode,cell):
 		notify(placement_reason)
 		return null
+	if mode == "garden":
+		var garden = GARDEN.new()
+		garden.setup_garden(self, cell)
+		entities.add_child(garden)
+		gardens.append(garden)
+		if not automatic and not repeat: cancel_placement()
+		select_entity(garden)
+		return garden
 	var job = JOB.new()
-	job.setup(self,mode,cell,job_entry(cell,4 if mode == "plant" else 3))
+	if mode == "expand": job.setup_expansion(self,cell,expansion_brush_size,expansion_preview)
+	else: job.setup(self,mode,cell,job_entry(cell,4 if mode == "plant" else 3))
 	
 	entities.add_child(job)
 	jobs.append(job)
 	rebuild_navigation()
-	if not automatic: cancel_placement()
+	if not automatic and not repeat: cancel_placement()
 	notify("Plantio marcado: aloque um trabalhador em Comida." if mode == "plant" else ("Investigação marcada: aloque um mineiro." if mode == "survey" else "Aterro marcado: aloque um construtor."))
 	return job
 
@@ -290,8 +413,9 @@ func complete_job(job) -> void:
 	else:
 		for cell in job.cells: land.set_cell(cell,ground_source,ground_atlas)
 		refresh_shoreline()
-		expansion_count += 1
-		if expansion_count % 2 == 0:
+		if job.discovery_eligible: expansion_count += 1
+		var discovered: bool = job.discovery_eligible and expansion_count % 2 == 0
+		if discovered:
 			var layer: TileMapLayer = DATA.CATALOG.resource_layer("Stone", job.origin)
 			var source = SOURCE.new()
 			entities.add_child(source)
@@ -300,7 +424,7 @@ func complete_job(job) -> void:
 			source.initial_reserve = 120
 			sources.append(source)
 			layer.free()
-		notify("Território ampliado!" + (" Uma jazida de 120 pedras foi descoberta." if expansion_count % 2 == 0 else " Mais espaço para sua vila."))
+		notify("Território ampliado!" + (" Uma jazida de 120 pedras foi descoberta." if discovered else " Mais espaço para sua vila."))
 	rebuild_navigation()
 
 func refresh_shoreline() -> void:
@@ -317,7 +441,7 @@ func refresh_shoreline() -> void:
 		land.set_cell(cell,ground_source,shore_atlas.get(key,ground_atlas))
 
 func upgrade_cost() -> Dictionary:
-	return {"fruit":20,"stone":25,"wood":15} if village_level == 1 else {"fruit":40,"stone":40,"wood":30}
+	return {"produce":20,"stone":25,"wood":15} if village_level == 1 else {"produce":40,"stone":40,"wood":30}
 
 func upgrade_ready() -> bool:
 	return village_level < 3 and can_afford(upgrade_cost())
@@ -328,22 +452,22 @@ func upgrade_village() -> bool:
 		return false
 	pay(upgrade_cost())
 	village_level += 1
-	notify("Vila nível %d! Moradia: %d habitantes. Transporte especializado liberado; carga 7 e pomares mais produtivos." % [village_level,population_limit()])
+	notify("Vila nível %d! Moradia: %d habitantes. Transporte especializado liberado; carga 7." % [village_level,population_limit()])
 	return true
 
 func coastal_aid() -> bool:
 	if aid_cooldown > 0: return false
-	var accepted: int = base.store("fruit", mini(4, logistics.storage_free(base)))
+	var accepted: int = base.store("produce", mini(4, logistics.storage_free(base)))
 	if accepted == 0:
 		notify("Reserva da base cheia. Libere espaço ou amplie depósitos.")
 		return false
 	aid_cooldown = 60
-	notify("Coleta costeira: +%d frutas. Disponível novamente em 60s." % accepted)
+	notify("Coleta costeira: +%d Hortifruti. Disponível novamente em 60s." % accepted)
 	return true
 
 func progression_text() -> String:
 	if upgrade_ready(): return "Evolução disponível! Abra Vila: expandir / evoluir para chegar ao nível %d." % (village_level + 1)
-	if total_delivered.fruit < 10 or total_delivered.stone < 10: return "Abasteça a vila: frutas %d/10 · pedra %d/10" % [mini(10,total_delivered.fruit),mini(10,total_delivered.stone)]
+	if total_delivered.produce < 10 or total_delivered.stone < 10: return "Abasteça a vila: Hortifruti %d/10 · pedra %d/10" % [mini(10,total_delivered.produce),mini(10,total_delivered.stone)]
 	if village_level == 3: return "Vila próspera! Continue expandindo e renovando seus pomares."
 	return "Sugestão: renove os pomares e amplie a costa. Evolução: " + cost_status(upgrade_cost())
 
@@ -425,10 +549,29 @@ func route_to_source(from: Vector2, source) -> PackedVector2Array:
 func can_afford(cost: Dictionary) -> bool:
 	return missing_resources(cost).is_empty()
 
-func missing_resources(cost: Dictionary) -> Dictionary:
+func available_stock() -> Dictionary:
 	var available := DATA.empty_stock()
 	for building in buildings:
 		for resource in available: available[resource] += logistics.available(building, resource)
+	# Outstanding orders reserve their unfunded balance immediately, even before
+	# a worker claims a delivery. Cargo already withdrawn is not reserved twice.
+	for site in buildings + jobs + gardens:
+		if site.needs_work():
+			for resource in site.materials.required:
+				available[resource] -= maxi(0, site.materials.missing(resource) - logistics.incoming(site, resource))
+	for resource in available: available[resource] = maxi(0, available[resource])
+	return available
+
+func resource_breakdown(resource: String) -> Dictionary:
+	var stored: int = stock.get(resource, 0)
+	var available: int = available_stock().get(resource, 0)
+	var carried := 0
+	for worker in workers:
+		if worker.cargo_resource == resource: carried += worker.cargo
+	return {"available": available, "stored": stored, "reserved": stored - available, "carried": carried}
+
+func missing_resources(cost: Dictionary) -> Dictionary:
+	var available := available_stock()
 	var missing := {}
 	for resource in cost:
 		var deficit: int = int(cost[resource]) - int(available.get(resource, 0))
@@ -471,7 +614,7 @@ func workplace_for(activity: String):
 	var best = null
 	var least := 2147483647
 	for building in buildings:
-		if building.kind != activity or not building.completed:
+		if building.kind != activity or not building.completed or building.demolition_requested:
 			continue
 		var assigned := 0
 		for worker in workers:
@@ -517,11 +660,14 @@ func can_place(kind: String, origin: Vector2i) -> bool:
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
 			var cell := origin + Vector2i(x, y)
+			if land.get_cell_source_id(cell) < 0:
+				placement_reason = "Há água sob a construção. Aterre toda a área de %d × %d células." % [grid_size.x,grid_size.y]
+				return false
 			if not is_walkable(cell):
-				placement_reason = "Escolha terreno livre, longe da água, recursos e prédios."
+				placement_reason = "Este terreno está ocupado por um prédio, recurso ou obra."
 				return false
 			footprint.append(cell)
-	for source in sources:
+	for source in sources + gardens:
 		if not source.removed and source.cells.any(func(spot): return footprint.has(spot)):
 			placement_reason = "Não construa sobre uma árvore ou recurso."
 			return false
@@ -570,13 +716,13 @@ func can_place(kind: String, origin: Vector2i) -> bool:
 			return false
 	return true
 
-func place_building(kind: String, origin: Vector2i):
+func place_building(kind: String, origin: Vector2i, repeat := false):
 	if not can_place(kind, origin):
 		notify(placement_reason)
 		return null
 	var building = add_building(kind, origin)
 	rebuild_navigation()
-	placement_kind = ""
+	if not repeat: placement_kind = ""
 	select_entity(building)
 	notify("Obra marcada. Materiais serão transportados antes do trabalho do construtor.")
 	return building
@@ -624,6 +770,12 @@ func center_camera() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouse:
 		pointer_position = event.position
+	if event is InputEventMouseButton and event.pressed and event.ctrl_pressed and action_mode == "expand" and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
+		if camera.input_blocked() or hud.blocks_world_input(event.position): return
+		expansion_brush_size = clampi(expansion_brush_size + (1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -1),expansion_brush.MIN_SIZE,expansion_brush.MAX_SIZE)
+		update_expansion_preview()
+		get_viewport().set_input_as_handled()
+		return
 	# Cancellation also works when the pointer is over a GUI panel.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		cancel_placement()
@@ -639,29 +791,36 @@ func entity_at(cell: Vector2i):
 	for index in range(buildings.size() - 1, -1, -1):
 		if buildings[index].footprint().has(cell):
 			return buildings[index]
-	for source in sources:
+	for source in sources + gardens:
 		if not source.removed and source.cells.has(cell):
 			return source
 	return null
 
 func _unhandled_input(event: InputEvent) -> void:
-	if hud.workforce_panel.visible and event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		hud.toggle_workforce()
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if event.echo: return
+		# Native dialogs consume Esc themselves; never open another menu beneath one.
+		for child in hud.get_children():
+			if child is Window and child.visible: return
+		if hud.residents_window.visible: hud.close_residents()
+		elif hud.workforce_panel.visible: hud.toggle_workforce()
+		elif not action_mode.is_empty() or not placement_kind.is_empty() or is_instance_valid(selection):
+			cancel_placement()
+			select_entity(null)
+		else: hud.open_game_menu()
+		get_viewport().set_input_as_handled()
 		return
-	if hud.residents_window.visible:
-		if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE: hud.close_residents()
-		return
+	if hud.residents_window.visible: return
 	if camera.input_blocked(): return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
-			KEY_ESCAPE:
-				cancel_placement()
-				select_entity(null)
 			KEY_1: begin_placement("food")
 			KEY_2: begin_placement("stone")
 			KEY_3: begin_placement("wood")
 			KEY_SPACE: simulation_paused = true if settlement.extinct else not simulation_paused
 			KEY_HOME: center_camera()
+			KEY_E: camera.smooth_zoom(1.12)
+			KEY_Q: camera.smooth_zoom(1.0 / 1.12)
 	if event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_MIDDLE:
 		camera.position -= event.relative / camera.zoom
 	if event is InputEventMouseButton and event.pressed:
@@ -674,20 +833,20 @@ func _unhandled_input(event: InputEvent) -> void:
 					return
 				var cell := world_cell(get_global_transform_with_canvas().affine_inverse() * event.position)
 				if not action_mode.is_empty():
-					place_job(action_mode, cell - Vector2i(1,1))
+					place_job(action_mode, cell - action_offset(), false, event.shift_pressed)
 					return
 				var entity = entity_at(cell)
-				if is_instance_valid(entity):
-					placement_kind = ""
+				if not placement_kind.is_empty():
+					place_building(placement_kind, cell - placement_offset(), event.shift_pressed)
+				elif is_instance_valid(entity):
 					select_entity(entity)
-				elif not placement_kind.is_empty():
-					place_building(placement_kind, cell - placement_offset())
 				else:
 					select_entity(null)
 
 func _process(delta: float) -> void:
 	if not simulation_paused and not settlement.extinct:
 		aid_cooldown = maxf(0, aid_cooldown - delta * simulation_speed)
+		settlement.tick_moves()
 		automation.tick(delta * simulation_speed)
 		if process_mode != Node.PROCESS_MODE_DISABLED: saves.tick(delta)
 		immigration.tick(delta * simulation_speed)
@@ -700,17 +859,28 @@ func _process(delta: float) -> void:
 			preview_cell = next_cell
 			preview_valid = can_place(placement_kind, preview_cell)
 			preview_check_time = 0.1
-	if not objective_complete and total_delivered.fruit >= 10 and total_delivered.stone >= 10:
+	if not objective_complete and total_delivered.produce >= 10 and total_delivered.stone >= 10:
 		objective_complete = true
 		notify("Objetivo concluído! Sua vila já coleta e entrega comida e pedra automaticamente.")
 	placement_overlay.queue_redraw()
 	if not action_mode.is_empty():
-		var next_cell := world_cell(get_global_transform_with_canvas().affine_inverse() * pointer_position) - Vector2i(1,1)
+		var next_cell := world_cell(get_global_transform_with_canvas().affine_inverse() * pointer_position) - action_offset()
 		preview_check_time -= delta
 		if next_cell != preview_cell or preview_check_time <= 0:
 			preview_cell = next_cell
 			preview_valid = can_place_job(action_mode, preview_cell)
 			preview_check_time = 0.1
+			if action_mode == "expand": hud.refresh()
+
+func action_offset() -> Vector2i:
+	return Vector2i(expansion_brush_size / 2,expansion_brush_size / 2) if action_mode == "expand" else Vector2i.ONE
+
+func update_expansion_preview() -> void:
+	preview_cell = world_cell(get_global_transform_with_canvas().affine_inverse() * pointer_position) - action_offset()
+	preview_valid = can_place_job("expand",preview_cell)
+	preview_check_time = 0.1
+	placement_overlay.queue_redraw()
+	hud.refresh()
 
 func placement_offset() -> Vector2i:
 	var size := DATA.building_size(placement_kind)
@@ -720,7 +890,14 @@ func draw_placement() -> void:
 	if not action_mode.is_empty():
 		if not hud.blocks_world_input(pointer_position):
 			var color := Color("a6d887") if preview_valid else Color("f2847c")
-			placement_overlay.draw_rect(Rect2(Vector2(preview_cell * 16), Vector2(48,64 if action_mode == "plant" else 48)), Color(color,0.4))
+			if action_mode == "expand":
+				for cell in expansion_preview.get("cells",[]):
+					var rect := Rect2(Vector2(cell*16),Vector2(16,16))
+					placement_overlay.draw_rect(rect,Color(color,0.4))
+					placement_overlay.draw_rect(rect,color,false,0.5)
+				placement_overlay.draw_rect(Rect2(Vector2(preview_cell*16),Vector2.ONE*expansion_brush_size*16),color,false,1)
+				return
+			placement_overlay.draw_rect(Rect2(Vector2(preview_cell * 16), Vector2(32,32) if action_mode == "garden" else Vector2(48,64 if action_mode == "plant" else 48)), Color(color,0.4))
 		return
 	if placement_kind.is_empty() or hud.blocks_world_input(pointer_position):
 		return
@@ -730,11 +907,19 @@ func draw_placement() -> void:
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
 			var rect := Rect2(origin + Vector2(x, y) * 16, Vector2(16, 16))
-			placement_overlay.draw_rect(rect, Color(color, 0.28))
-			placement_overlay.draw_rect(rect, Color(color, 0.8), false, 0.5)
+			var cell := preview_cell + Vector2i(x,y)
+			var occupied := not is_walkable(cell)
+			occupied = occupied or logistics.piles.any(func(pile): return pile.cell == cell)
+			for source in sources + gardens:
+				if not source.removed and source.cells.has(cell): occupied = true
+			var cell_color := Color("f2847c") if occupied else Color("a6d887")
+			placement_overlay.draw_rect(rect, Color(cell_color, 0.28))
+			placement_overlay.draw_rect(rect, Color(cell_color, 0.8), false, 0.5)
 	var entry := cell_center(preview_cell + DATA.building_door(placement_kind))
 	if preview_texture != null:
 		var texture_size := preview_texture.get_size() * (0.5 if placement_kind in ["house", "workshop"] else 1.0)
 		placement_overlay.draw_texture_rect(preview_texture, Rect2(origin, texture_size), false, Color(color, 0.7))
-	placement_overlay.draw_circle(entry, 4, color)
-	placement_overlay.draw_line(entry + Vector2(0, 3), entry + Vector2(0, 10), color, 1)
+	var entry_color := Color("a6d887") if is_walkable(preview_cell + DATA.building_door(placement_kind)) else Color("f2847c")
+	placement_overlay.draw_rect(Rect2(entry-Vector2(8,8),Vector2(16,16)),entry_color,false,1)
+	placement_overlay.draw_circle(entry, 4, entry_color)
+	placement_overlay.draw_line(entry + Vector2(0, 3), entry + Vector2(0, 10), entry_color, 1)
